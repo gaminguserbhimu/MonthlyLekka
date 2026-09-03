@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.MonthlyLekka" parent="Theme.MaterialComponents.Light" />
+</resources>
