@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -90,53 +91,18 @@ fun WelcomeScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Rounded.AccountBalanceWallet,
-                                    contentDescription = "Monthly Expenses Logo",
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "Monthly Expenses",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = "Smart Personal & Event Expense Manager",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onHelpClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.HelpOutline,
-                            contentDescription = "Help & Guide",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = if (isLargeScreen) 24.dp else 16.dp)
+                    .padding(top = 8.dp, bottom = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                BrandedHeader(
+                    isLargeScreen = isLargeScreen,
+                    onHelpClick = onHelpClick
                 )
-            )
+            }
         }
     ) { innerPadding ->
         Column(
@@ -495,14 +461,16 @@ fun RecentTableCard(
 }
 
 @Composable
-fun BrandedHeader(isLargeScreen: Boolean) {
+fun BrandedHeader(
+    isLargeScreen: Boolean = false,
+    onHelpClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .widthIn(max = 700.dp)
             .padding(top = 4.dp, bottom = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
             shape = RoundedCornerShape(18.dp),
@@ -519,21 +487,32 @@ fun BrandedHeader(isLargeScreen: Boolean) {
             }
         }
 
-        Spacer(modifier = Modifier.width(14.dp))
-
-        Column {
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text(
                 text = "Monthly Expenses",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = if (isLargeScreen) 28.sp else 22.sp
                 ),
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center
             )
             Text(
                 text = "Smart Personal & Event Expense Manager",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
+        }
+
+        IconButton(onClick = onHelpClick) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.HelpOutline,
+                contentDescription = "Help & Guide",
+                tint = MaterialTheme.colorScheme.primary
             )
         }
     }
