@@ -387,6 +387,11 @@ fun TransactionsSlide(
                     val totalOutcome = remember(expenses) {
                         expenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
                     }
+                    val netBalance = totalIncome - totalOutcome
+                    val netSign = if (netBalance >= 0) "+" else "-"
+                    val netColor = if (netBalance >= 0) Color(0xFF10B981) else Color(0xFFEF4444)
+                    val absNet = if (netBalance < 0) -netBalance else netBalance
+                    val netText = "$netSign ${absNet.toCurrencyString()}"
 
                     // Left Side: Transaction Count with Logo
                     Row(
@@ -407,9 +412,9 @@ fun TransactionsSlide(
                         )
                     }
 
-                    // Right Side: Total Income & Total Outcome (Right-Aligned)
+                    // Right Side: Total Income, Total Outcome & Net Balance (Right-Aligned)
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Income Pill
@@ -447,6 +452,25 @@ fun TransactionsSlide(
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFEF4444)
+                            )
+                        }
+
+                        // Net Balance Pill
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (netBalance >= 0) Icons.AutoMirrored.Rounded.TrendingUp else Icons.AutoMirrored.Rounded.TrendingDown,
+                                contentDescription = "Net Balance",
+                                tint = netColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = netText,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = netColor
                             )
                         }
                     }
