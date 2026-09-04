@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -91,14 +90,53 @@ fun WelcomeScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.background
-            ) {
-                BrandedHeader(
-                    isLargeScreen = isLargeScreen,
-                    onHelpClick = onHelpClick
+            TopAppBar(
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.AccountBalanceWallet,
+                                    contentDescription = "Monthly Expenses Logo",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Monthly Expenses",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Smart Personal & Event Expense Manager",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onHelpClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.HelpOutline,
+                            contentDescription = "Help & Guide",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
                 )
-            }
+            )
         }
     ) { innerPadding ->
         Column(
@@ -347,34 +385,6 @@ fun WelcomeScreen(
                     )
                 }
             }
-
-            // 7. Recent Transactions Section (if any)
-            if (recentExpenses.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = 700.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Recent Transactions",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
-
-                    recentExpenses.take(5).forEach { item ->
-                        ExpenseItemCard(
-                            item = item,
-                            isMotherTable = item.lekkaName.isNotBlank(),
-                            onClick = {
-                                onLekkaSelected(item.expense.lekkaId)
-                                onTableClick(item.expense.lekkaId)
-                            }
-                        )
-                    }
-                }
-            }
         }
     }
 
@@ -485,70 +495,46 @@ fun RecentTableCard(
 }
 
 @Composable
-fun BrandedHeader(
-    isLargeScreen: Boolean,
-    modifier: Modifier = Modifier,
-    onHelpClick: (() -> Unit)? = null
-) {
-    Box(
-        modifier = modifier
+fun BrandedHeader(isLargeScreen: Boolean) {
+    Row(
+        modifier = Modifier
             .fillMaxWidth()
             .widthIn(max = 700.dp)
-            .padding(top = 8.dp, bottom = 4.dp, start = 16.dp, end = 16.dp)
+            .padding(top = 4.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(if (isLargeScreen) 56.dp else 48.dp)
         ) {
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(if (isLargeScreen) 56.dp else 48.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Rounded.AccountBalanceWallet,
-                        contentDescription = "Monthly Expenses Logo",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(if (isLargeScreen) 32.dp else 26.dp)
-                    )
-                }
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Rounded.AccountBalanceWallet,
+                    contentDescription = "Monthly Expenses Logo",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(if (isLargeScreen) 32.dp else 26.dp)
+                )
             }
+        }
 
-            Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
+        Column {
             Text(
                 text = "Monthly Expenses",
-                style = MaterialTheme.typography.headlineSmall.copy(
+                style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = if (isLargeScreen) 26.sp else 22.sp
+                    fontSize = if (isLargeScreen) 28.sp else 22.sp
                 ),
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center
+                color = MaterialTheme.colorScheme.primary
             )
-
-            Spacer(modifier = Modifier.height(2.dp))
-
             Text(
                 text = "Smart Personal & Event Expense Manager",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             )
-        }
-
-        if (onHelpClick != null) {
-            IconButton(
-                onClick = onHelpClick,
-                modifier = Modifier.align(Alignment.TopEnd)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.HelpOutline,
-                    contentDescription = "Help & Guide",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
         }
     }
 }
