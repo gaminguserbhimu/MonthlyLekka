@@ -388,6 +388,26 @@ fun TransactionsSlide(
                         expenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
                     }
 
+                    // Left Side: Transaction Count with Logo
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
+                            contentDescription = "Transaction Count",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = if (isSelectionMode) "${selectedExpenseIds.size} Selected" else "${expenses.size}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+
+                    // Right Side: Total Income & Total Outcome (Right-Aligned)
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -429,14 +449,6 @@ fun TransactionsSlide(
                                 color = Color(0xFFEF4444)
                             )
                         }
-                    }
-                    if (isSelectionMode) {
-                        Text(
-                            text = "${selectedExpenseIds.size} Selected",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
                     }
                 }
             }
