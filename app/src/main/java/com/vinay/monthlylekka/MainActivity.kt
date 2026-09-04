@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
                 val expenses by viewModel.expenses.collectAsState()
                 val categories by viewModel.categories.collectAsState()
                 val monthlySummaries by viewModel.monthlySummaries.collectAsState()
+                val availableLekkas by viewModel.childLekkas.collectAsState()
                 
                 val childLekkas = remember(allLekkasWithSummary) {
                     allLekkasWithSummary.filter { !it.lekka.isMotherTable }.map { it.lekka }
@@ -160,12 +161,15 @@ class MainActivity : ComponentActivity() {
                                         val expenseItem = expenses.find { it.expense.id == lastRoute.expenseId }
                                         AddExpenseScreen(
                                             categories = categories,
+                                            availableLekkas = availableLekkas,
+                                            initialLekkaId = lastRoute.lekkaId,
                                             expenseToEdit = expenseItem?.toExpenseWithCategory(),
-                                            onSave = { id, desc, amount, categoryId, date ->
+                                            onTableSelected = viewModel::selectLekka,
+                                            onSave = { id, desc, amount, categoryId, date, targetLekkaId ->
                                                 if (id != null) {
-                                                    viewModel.updateExpense(id, desc, amount, categoryId, date, targetLekkaId = lastRoute.lekkaId)
+                                                    viewModel.updateExpense(id, desc, amount, categoryId, date, targetLekkaId = targetLekkaId ?: lastRoute.lekkaId)
                                                 } else {
-                                                    viewModel.addExpense(desc, amount, categoryId, date, targetLekkaId = lastRoute.lekkaId)
+                                                    viewModel.addExpense(desc, amount, categoryId, date, targetLekkaId = targetLekkaId ?: lastRoute.lekkaId)
                                                 }
                                                 backStack = backStack.filterNot { it is Route.AddExpense }
                                             },
@@ -327,12 +331,15 @@ class MainActivity : ComponentActivity() {
                                     val expenseItem = expenses.find { it.expense.id == key.expenseId }
                                     AddExpenseScreen(
                                         categories = categories,
+                                        availableLekkas = availableLekkas,
+                                        initialLekkaId = key.lekkaId,
                                         expenseToEdit = expenseItem?.toExpenseWithCategory(),
-                                        onSave = { id, desc, amount, categoryId, date ->
+                                        onTableSelected = viewModel::selectLekka,
+                                        onSave = { id, desc, amount, categoryId, date, targetLekkaId ->
                                             if (id != null) {
-                                                viewModel.updateExpense(id, desc, amount, categoryId, date, targetLekkaId = key.lekkaId)
+                                                viewModel.updateExpense(id, desc, amount, categoryId, date, targetLekkaId = targetLekkaId ?: key.lekkaId)
                                             } else {
-                                                viewModel.addExpense(desc, amount, categoryId, date, targetLekkaId = key.lekkaId)
+                                                viewModel.addExpense(desc, amount, categoryId, date, targetLekkaId = targetLekkaId ?: key.lekkaId)
                                             }
                                             if (backStack.size > 1) backStack = backStack.dropLast(1)
                                         },

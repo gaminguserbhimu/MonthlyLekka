@@ -34,13 +34,13 @@ data class CategorySpec(
 )
 
 val DEFAULT_CATEGORY_SPECS = listOf(
+    CategorySpec("Income", "#2E7D32", isIncome = true),
     CategorySpec("Kirani", "#FFB300", isIncome = false),
     CategorySpec("Kaipalle", "#43A047", isIncome = false),
     CategorySpec("Food", "#E53935", isIncome = false),
     CategorySpec("Bills", "#3949AB", isIncome = false),
     CategorySpec("Others", "#757575", isIncome = false),
     CategorySpec("Travel", "#1E88E5", isIncome = false),
-    CategorySpec("Hospital", "#D81B60", isIncome = false),
-    CategorySpec("Income", "#2E7D32", isIncome = true)
+    CategorySpec("Hospital", "#D81B60", isIncome = false)
 )
 

@@ -10,6 +10,7 @@ import androidx.room.migration.Migration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Database(entities = [Category::class, Expense::class, Lekka::class], version = 5, exportSchema = false)
 @TypeConverters(Converters::class)
@@ -17,6 +18,28 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun expenseDao(): ExpenseDao
     abstract fun lekkaDao(): LekkaDao
+
+    suspend fun clearDatabase() = withContext(Dispatchers.IO) {
+        clearAllTables()
+        populateDatabase()
+    }
+
+    suspend fun populateDatabase() {
+        val masterLekkaId = lekkaDao().insertLekka(Lekka(name = "Master Expense Sheet", isMotherTable = true, isDefault = false))
+        val defaultChildLekkaId = lekkaDao().insertLekka(Lekka(name = "Monthly Expenses", isMotherTable = false, isDefault = true))
+
+        val categories = listOf(
+            Category(lekkaId = defaultChildLekkaId, name = "Income", colorHex = "#2E7D32", isIncome = true),
+            Category(lekkaId = defaultChildLekkaId, name = "Kirani", colorHex = "#FFB300", isIncome = false),
+            Category(lekkaId = defaultChildLekkaId, name = "Kaipalle", colorHex = "#43A047", isIncome = false),
+            Category(lekkaId = defaultChildLekkaId, name = "Food", colorHex = "#E53935", isIncome = false),
+            Category(lekkaId = defaultChildLekkaId, name = "Bills", colorHex = "#3949AB", isIncome = false),
+            Category(lekkaId = defaultChildLekkaId, name = "Others", colorHex = "#757575", isIncome = false),
+            Category(lekkaId = defaultChildLekkaId, name = "Travel", colorHex = "#1E88E5", isIncome = false),
+            Category(lekkaId = defaultChildLekkaId, name = "Hospital", colorHex = "#D81B60", isIncome = false)
+        )
+        categories.forEach { categoryDao().insertCategory(it) }
+    }
 
     companion object {
         @Volatile
@@ -59,9 +82,9 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE `lekkas` ADD COLUMN `isMotherTable` INTEGER NOT NULL DEFAULT 0")
                 database.execSQL("""
                     INSERT OR IGNORE INTO `lekkas` (`name`, `startDate`, `endDate`, `isDefault`, `isMotherTable`) 
-                    VALUES ('Master Expense Sheet', NULL, NULL, 1, 1)
+                    VALUES ('Master Expense Sheet', NULL, NULL, 0, 1)
                 """)
-                database.execSQL("UPDATE `lekkas` SET `isDefault` = CASE WHEN `isMotherTable` = 1 THEN 1 ELSE 0 END")
+                database.execSQL("UPDATE `lekkas` SET `isDefault` = CASE WHEN `isMotherTable` = 0 AND `id` = (SELECT `id` FROM `lekkas` WHERE `isMotherTable` = 0 ORDER BY `id` ASC LIMIT 1) THEN 1 ELSE 0 END")
             }
         }
 
@@ -84,34 +107,14 @@ abstract class AppDatabase : RoomDatabase() {
 
     private class AppDatabaseCallback(
         private val scope: CoroutineScope
-    ) : RoomDatabase.Callback() {
+    ) : Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
             INSTANCE?.let { database ->
                 scope.launch(Dispatchers.IO) {
-                    populateDatabase(database)
+                    database.populateDatabase()
                 }
             }
-        }
-
-        suspend fun populateDatabase(database: AppDatabase) {
-            val lekkaDao = database.lekkaDao()
-            val categoryDao = database.categoryDao()
-
-            val masterLekkaId = lekkaDao.insertLekka(Lekka(name = "Master Expense Sheet", isMotherTable = true, isDefault = true))
-            val defaultChildLekkaId = lekkaDao.insertLekka(Lekka(name = "Monthly Expenses", isMotherTable = false, isDefault = false))
-
-            val categories = listOf(
-                Category(lekkaId = defaultChildLekkaId, name = "Kirani", colorHex = "#FFB300", isIncome = false),
-                Category(lekkaId = defaultChildLekkaId, name = "Kaipalle", colorHex = "#43A047", isIncome = false),
-                Category(lekkaId = defaultChildLekkaId, name = "Food", colorHex = "#E53935", isIncome = false),
-                Category(lekkaId = defaultChildLekkaId, name = "Bills", colorHex = "#3949AB", isIncome = false),
-                Category(lekkaId = defaultChildLekkaId, name = "Others", colorHex = "#757575", isIncome = false),
-                Category(lekkaId = defaultChildLekkaId, name = "Travel", colorHex = "#1E88E5", isIncome = false),
-                Category(lekkaId = defaultChildLekkaId, name = "Hospital", colorHex = "#D81B60", isIncome = false),
-                Category(lekkaId = defaultChildLekkaId, name = "Income", colorHex = "#2E7D32", isIncome = true)
-            )
-            categories.forEach { categoryDao.insertCategory(it) }
         }
     }
 }

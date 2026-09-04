@@ -7,8 +7,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.CalendarToday
-import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,9 +19,6 @@ import androidx.compose.ui.unit.sp
 import com.vinay.monthlylekka.data.CategorySpec
 import com.vinay.monthlylekka.data.DEFAULT_CATEGORY_SPECS
 import com.vinay.monthlylekka.data.Lekka
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,11 +27,9 @@ fun LekkaDialog(
     initialLekka: Lekka? = null,
     initialCategories: List<CategorySpec>? = null,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, startDate: String?, endDate: String?, isDefault: Boolean, categories: List<CategorySpec>) -> Unit
+    onConfirm: (name: String, isDefault: Boolean, categories: List<CategorySpec>) -> Unit
 ) {
     var name by remember { mutableStateOf(initialLekka?.name ?: "") }
-    var startDate by remember { mutableStateOf(initialLekka?.startDate ?: "") }
-    var endDate by remember { mutableStateOf(initialLekka?.endDate ?: "") }
     var isDefault by remember { mutableStateOf(initialLekka?.isDefault ?: false) }
 
     var availableCategories by remember {
@@ -47,59 +40,6 @@ fun LekkaDialog(
     }
 
     var customCategoryName by remember { mutableStateOf("") }
-
-    var showStartPicker by remember { mutableStateOf(false) }
-    var showEndPicker by remember { mutableStateOf(false) }
-
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
-
-    if (showStartPicker) {
-        val datePickerState = rememberDatePickerState()
-        DatePickerDialog(
-            onDismissRequest = { showStartPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let {
-                        startDate = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate().format(dateFormatter)
-                    }
-                    showStartPicker = false
-                }) {
-                    Text("OK")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showStartPicker = false }) {
-                    Text("Cancel")
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
-    }
-
-    if (showEndPicker) {
-        val datePickerState = rememberDatePickerState()
-        DatePickerDialog(
-            onDismissRequest = { showEndPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let {
-                        endDate = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate().format(dateFormatter)
-                    }
-                    showEndPicker = false
-                }) {
-                    Text("OK")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEndPicker = false }) {
-                    Text("Cancel")
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
-    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -120,50 +60,6 @@ fun LekkaDialog(
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = startDate,
-                    onValueChange = { startDate = it },
-                    label = { Text("Start Date (Optional)") },
-                    placeholder = { Text("DD/MM/YYYY") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    trailingIcon = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (startDate.isNotBlank()) {
-                                IconButton(onClick = { startDate = "" }) {
-                                    Icon(Icons.Rounded.Clear, contentDescription = "Clear Start Date")
-                                }
-                            }
-                            IconButton(onClick = { showStartPicker = true }) {
-                                Icon(Icons.Rounded.CalendarToday, contentDescription = "Pick Start Date")
-                            }
-                        }
-                    }
-                )
-
-                OutlinedTextField(
-                    value = endDate,
-                    onValueChange = { endDate = it },
-                    label = { Text("End Date (Optional)") },
-                    placeholder = { Text("DD/MM/YYYY") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    trailingIcon = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (endDate.isNotBlank()) {
-                                IconButton(onClick = { endDate = "" }) {
-                                    Icon(Icons.Rounded.Clear, contentDescription = "Clear End Date")
-                                }
-                            }
-                            IconButton(onClick = { showEndPicker = true }) {
-                                Icon(Icons.Rounded.CalendarToday, contentDescription = "Pick End Date")
-                            }
-                        }
-                    }
                 )
 
                 Row(
@@ -217,13 +113,14 @@ fun LekkaDialog(
 
                     // Default & Added Categories List with Checkboxes
                     availableCategories.forEach { categorySpec ->
-                        val isChecked = selectedCategories.contains(categorySpec)
+                        val isIncomeSpec = categorySpec.isIncome || categorySpec.name.equals("Income", ignoreCase = true)
+                        val isChecked = selectedCategories.contains(categorySpec) || isIncomeSpec
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
+                                .clickable(enabled = !isIncomeSpec) {
                                     selectedCategories = if (isChecked) {
                                         selectedCategories - categorySpec
                                     } else {
@@ -234,11 +131,14 @@ fun LekkaDialog(
                         ) {
                             Checkbox(
                                 checked = isChecked,
+                                enabled = !isIncomeSpec,
                                 onCheckedChange = { checked ->
-                                    selectedCategories = if (checked) {
-                                        selectedCategories + categorySpec
-                                    } else {
-                                        selectedCategories - categorySpec
+                                    if (!isIncomeSpec) {
+                                        selectedCategories = if (checked) {
+                                            selectedCategories + categorySpec
+                                        } else {
+                                            selectedCategories - categorySpec
+                                        }
                                     }
                                 }
                             )
@@ -343,8 +243,6 @@ fun LekkaDialog(
                     if (name.isNotBlank()) {
                         onConfirm(
                             name.trim(),
-                            startDate.ifBlank { null },
-                            endDate.ifBlank { null },
                             isDefault,
                             selectedCategories.toList()
                         )

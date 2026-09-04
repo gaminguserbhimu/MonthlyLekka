@@ -13,26 +13,40 @@ import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.LekkaWithSummary
 import com.vinay.monthlylekka.data.MonthlySummary
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.util.Collections
 
-class ExpenseViewModel(private val repository: AppRepository) : ViewModel() {
+class ExpenseViewModel(
+    private val repository: AppRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) : ViewModel() {
 
     private val _selectedLekkaId = MutableStateFlow<Long?>(null)
     val selectedLekkaId: StateFlow<Long?> = _selectedLekkaId.asStateFlow()
 
     val allLekkas: StateFlow<List<Lekka>> = repository.allLekkas
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val childLekkas: StateFlow<List<Lekka>> = allLekkas
+        .map { lekkas -> lekkas.filter { !it.isMotherTable } }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -49,6 +63,7 @@ class ExpenseViewModel(private val repository: AppRepository) : ViewModel() {
     )
 
     val motherTableSummary: StateFlow<LekkaSummary?> = repository.getMotherTableSummary()
+        .map { summary -> summary ?: LekkaSummary(0, 0.0, 0.0) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -118,22 +133,80 @@ class ExpenseViewModel(private val repository: AppRepository) : ViewModel() {
         initialValue = emptyList()
     )
 
+    private val seedingLekkaIds = Collections.synchronizedSet(mutableSetOf<Long>())
+
+    fun ensureDefaultCategoriesForLekka(lekkaId: Long) {
+        if (lekkaId <= 0L) return
+        if (seedingLekkaIds.add(lekkaId)) {
+            viewModelScope.launch(ioDispatcher) {
+                try {
+                    val existing = repository.getCategoriesByLekka(lekkaId).firstOrNull()
+                    if (existing.isNullOrEmpty()) {
+                        seedDefaultCategories(lekkaId)
+                    }
+                } finally {
+                    seedingLekkaIds.remove(lekkaId)
+                }
+            }
+        }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val categories: StateFlow<List<Category>> = combine(_selectedLekkaId, allLekkas) { id, lekkas ->
         Pair(id, lekkas)
     }.flatMapLatest { (id, lekkas) ->
+        val childLekkas = lekkas.filter { !it.isMotherTable }
         val targetId = if (id != null) {
             val selected = lekkas.find { it.id == id }
             if (selected?.isMotherTable == true) {
-                lekkas.find { !it.isMotherTable }?.id
+                childLekkas.find { it.isDefault }?.id ?: childLekkas.firstOrNull()?.id
             } else id
-        } else null
+        } else {
+            childLekkas.find { it.isDefault }?.id ?: childLekkas.firstOrNull()?.id
+        }
 
-        if (targetId != null) repository.getCategoriesByLekka(targetId) else flowOf(emptyList())
+        if (targetId != null) {
+            repository.getCategoriesByLekka(targetId).map { cats ->
+                if (cats.isEmpty()) {
+                    ensureDefaultCategoriesForLekka(targetId)
+                    DEFAULT_CATEGORY_SPECS.mapIndexed { index, spec ->
+                        Category(
+                            id = (index + 1).toLong(),
+                            lekkaId = targetId,
+                            name = spec.name,
+                            colorHex = spec.colorHex,
+                            isIncome = spec.isIncome
+                        )
+                    }
+                } else {
+                    cats
+                }
+            }
+        } else {
+            flowOf(
+                DEFAULT_CATEGORY_SPECS.mapIndexed { index, spec ->
+                    Category(
+                        id = (index + 1).toLong(),
+                        lekkaId = 0L,
+                        name = spec.name,
+                        colorHex = spec.colorHex,
+                        isIncome = spec.isIncome
+                    )
+                }
+            )
+        }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
+        initialValue = DEFAULT_CATEGORY_SPECS.mapIndexed { index, spec ->
+            Category(
+                id = (index + 1).toLong(),
+                lekkaId = 0L,
+                name = spec.name,
+                colorHex = spec.colorHex,
+                isIncome = spec.isIncome
+            )
+        }
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -157,19 +230,30 @@ class ExpenseViewModel(private val repository: AppRepository) : ViewModel() {
     )
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             allLekkas.collect { lekkas ->
                 if (lekkas.isEmpty()) {
-                    val masterLekkaId = repository.insertLekka(Lekka(name = "Master Expense Sheet", isMotherTable = true, isDefault = true))
-                    val defaultChildId = repository.insertLekka(Lekka(name = "Monthly Expenses", isMotherTable = false, isDefault = false))
-                    seedDefaultCategories(defaultChildId)
-                    _selectedLekkaId.value = masterLekkaId
-                } else if (_selectedLekkaId.value == null) {
-                    val defaultLekka = lekkas.find { it.isDefault } ?: lekkas.first()
-                    _selectedLekkaId.value = defaultLekka.id
+                    repository.populateDatabase()
+                    _selectedLekkaId.value = null
+                } else if (_selectedLekkaId.value == null || lekkas.none { it.id == _selectedLekkaId.value }) {
+                    val masterLekka = lekkas.find { it.isMotherTable }
+                    val defaultLekka = masterLekka ?: lekkas.find { it.isDefault } ?: lekkas.firstOrNull()
+                    defaultLekka?.let {
+                        _selectedLekkaId.value = it.id
+                    }
                 }
             }
         }
+    }
+
+    fun clearDatabase() {
+        viewModelScope.launch(ioDispatcher) {
+            repository.clearDatabase()
+        }
+    }
+
+    fun clearAllData() {
+        clearDatabase()
     }
 
     fun selectLekka(id: Long) {
@@ -177,34 +261,64 @@ class ExpenseViewModel(private val repository: AppRepository) : ViewModel() {
     }
 
     fun setDefaultLekka(lekkaId: Long) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             repository.setDefaultLekka(lekkaId)
+        }
+    }
+
+    fun addExpense(expense: Expense, targetLekkaId: Long? = null) {
+        val lekkaId = targetLekkaId ?: expense.lekkaId.takeIf { it != 0L } ?: _selectedLekkaId.value ?: return
+        viewModelScope.launch(ioDispatcher) {
+            val existing = repository.getCategoriesByLekka(lekkaId).firstOrNull()
+            val categories = if (existing.isNullOrEmpty()) {
+                seedDefaultCategories(lekkaId)
+                repository.getCategoriesByLekka(lekkaId).firstOrNull() ?: emptyList()
+            } else {
+                existing
+            }
+            val validCategoryId = categories.find { it.id == expense.categoryId }?.id
+                ?: categories.firstOrNull()?.id
+                ?: expense.categoryId
+
+            val newExpense = expense.copy(lekkaId = lekkaId, categoryId = validCategoryId)
+            repository.insertExpense(newExpense)
         }
     }
 
     fun addExpense(description: String, amount: Double, categoryId: Long, date: LocalDate, targetLekkaId: Long? = null) {
         val lekkaId = targetLekkaId ?: _selectedLekkaId.value ?: return
-        viewModelScope.launch {
-            val newExpense = Expense(
+        addExpense(
+            Expense(
                 lekkaId = lekkaId,
                 description = description,
                 amount = amount,
                 categoryId = categoryId,
                 date = date
-            )
-            repository.insertExpense(newExpense)
-        }
+            ),
+            targetLekkaId = lekkaId
+        )
     }
 
     fun updateExpense(id: Long, description: String, amount: Double, categoryId: Long, date: LocalDate, targetLekkaId: Long? = null) {
         val lekkaId = targetLekkaId ?: _selectedLekkaId.value ?: return
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
+            val existing = repository.getCategoriesByLekka(lekkaId).firstOrNull()
+            val categories = if (existing.isNullOrEmpty()) {
+                seedDefaultCategories(lekkaId)
+                repository.getCategoriesByLekka(lekkaId).firstOrNull() ?: emptyList()
+            } else {
+                existing
+            }
+            val validCategoryId = categories.find { it.id == categoryId }?.id
+                ?: categories.firstOrNull()?.id
+                ?: categoryId
+
             val updatedExpense = Expense(
                 id = id,
                 lekkaId = lekkaId,
                 description = description,
                 amount = amount,
-                categoryId = categoryId,
+                categoryId = validCategoryId,
                 date = date
             )
             repository.updateExpense(updatedExpense)
@@ -212,38 +326,41 @@ class ExpenseViewModel(private val repository: AppRepository) : ViewModel() {
     }
 
     fun deleteExpense(expense: Expense) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             repository.deleteExpense(expense)
         }
     }
 
     fun deleteExpenses(expenses: List<Expense>) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             repository.deleteExpenses(expenses)
         }
     }
 
     fun deleteExpensesByIds(ids: List<Long>) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             repository.deleteExpensesByIds(ids)
         }
     }
 
-    fun addCategory(name: String, colorHex: String, isIncome: Boolean) {
+    fun addCategory(name: String, colorHex: String, isIncome: Boolean = false) {
         val lekkaId = _selectedLekkaId.value ?: return
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             repository.insertCategory(Category(lekkaId = lekkaId, name = name, colorHex = colorHex, isIncome = isIncome))
         }
     }
 
     fun updateCategory(category: Category) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             repository.updateCategory(category)
         }
     }
 
     fun deleteCategory(category: Category) {
-        viewModelScope.launch {
+        if (category.isIncome || category.name.equals("Income", ignoreCase = true)) {
+            return // System category cannot be deleted
+        }
+        viewModelScope.launch(ioDispatcher) {
             repository.deleteCategory(category)
         }
     }
@@ -255,7 +372,7 @@ class ExpenseViewModel(private val repository: AppRepository) : ViewModel() {
         isDefault: Boolean = false,
         categories: List<CategorySpec> = DEFAULT_CATEGORY_SPECS
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val lekkaId = repository.insertLekka(
                 Lekka(
                     name = name,
@@ -293,14 +410,14 @@ class ExpenseViewModel(private val repository: AppRepository) : ViewModel() {
         isDefault: Boolean = lekka.isDefault,
         categories: List<CategorySpec>? = null
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val updatedLekka = lekka.copy(isDefault = isDefault)
             repository.updateLekka(updatedLekka)
             if (isDefault) {
                 repository.setDefaultLekka(lekka.id)
             }
             if (categories != null) {
-                val existingCategories = repository.getCategoriesByLekka(lekka.id).first()
+                val existingCategories = repository.getCategoriesByLekka(lekka.id).firstOrNull() ?: emptyList()
                 val existingNames = existingCategories.map { it.name }.toSet()
                 val selectedNames = categories.map { it.name }.toSet()
 
@@ -327,17 +444,20 @@ class ExpenseViewModel(private val repository: AppRepository) : ViewModel() {
 
     fun deleteLekka(lekka: Lekka) {
         if (lekka.isMotherTable) return // Mother Table cannot be deleted
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             repository.deleteLekka(lekka)
         }
     }
 }
 
-class ExpenseViewModelFactory(private val repository: AppRepository) : ViewModelProvider.Factory {
+class ExpenseViewModelFactory(
+    private val repository: AppRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ExpenseViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ExpenseViewModel(repository) as T
+            return ExpenseViewModel(repository, ioDispatcher) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

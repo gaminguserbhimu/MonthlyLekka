@@ -73,6 +73,10 @@ class ExpenseViewModelTest {
         override suspend fun getMotherTable(): Lekka? = lekkas.value.find { it.isMotherTable }
 
         override fun getChildLekkas(): Flow<List<Lekka>> = lekkas.map { list -> list.filter { !it.isMotherTable } }
+
+        override suspend fun deleteAllLekkas() {
+            lekkas.value = emptyList()
+        }
     }
 
     private class FakeCategoryDao : CategoryDao {
@@ -80,7 +84,10 @@ class ExpenseViewModelTest {
         private var nextId = 1L
 
         override fun getAllCategories(lekkaId: Long): Flow<List<Category>> {
-            return categories.map { list -> list.filter { it.lekkaId == lekkaId } }
+            return categories.map { list ->
+                list.filter { it.lekkaId == lekkaId }
+                    .sortedWith(compareByDescending<Category> { it.isIncome }.thenBy { it.name })
+            }
         }
 
         override suspend fun insertCategory(category: Category) {
@@ -89,7 +96,11 @@ class ExpenseViewModelTest {
         }
 
         override suspend fun insertCategories(categories: List<Category>) {
-            categories.forEach { insertCategory(it) }
+            val newCategories = categories.map { category ->
+                val id = if (category.id == 0L) nextId++ else category.id
+                category.copy(id = id)
+            }
+            this.categories.value = this.categories.value + newCategories
         }
 
         override suspend fun updateCategory(category: Category) {
@@ -101,6 +112,10 @@ class ExpenseViewModelTest {
         }
 
         override suspend fun getCategoryById(id: Long): Category? = categories.value.find { it.id == id }
+
+        override suspend fun deleteAllCategories() {
+            categories.value = emptyList()
+        }
     }
 
     private class FakeExpenseDao : ExpenseDao {
@@ -126,8 +141,18 @@ class ExpenseViewModelTest {
 
         override fun getMotherTableSummary(): Flow<LekkaSummary?> = MutableStateFlow(LekkaSummary(0, 5000.0, 2000.0))
 
-        override suspend fun insertExpense(expense: Expense) {}
-        override suspend fun updateExpense(expense: Expense) {}
+        override suspend fun insertExpense(expense: Expense) {
+            val id = if (expense.id == 0L) (expenses.value.size + 1).toLong() else expense.id
+            val newExpense = expense.copy(id = id)
+            val cat = Category(id = expense.categoryId, lekkaId = expense.lekkaId, name = "Food", colorHex = "#FF0000", isIncome = false)
+            val item = ExpenseWithCategoryAndLekka(newExpense, cat, "Lekka $id")
+            expenses.value = expenses.value + item
+        }
+        override suspend fun updateExpense(expense: Expense) {
+            val cat = Category(id = expense.categoryId, lekkaId = expense.lekkaId, name = "Food", colorHex = "#FF0000", isIncome = false)
+            val item = ExpenseWithCategoryAndLekka(expense, cat, "Lekka ${expense.id}")
+            expenses.value = expenses.value.map { if (it.expense.id == expense.id) item else it }
+        }
         override suspend fun deleteExpense(expense: Expense) {
             expenses.value = expenses.value.filter { it.expense.id != expense.id }
         }
@@ -138,6 +163,9 @@ class ExpenseViewModelTest {
         override suspend fun deleteExpensesByIds(ids: List<Long>) {
             val deleteIds = ids.toSet()
             this.expenses.value = this.expenses.value.filter { it.expense.id !in deleteIds }
+        }
+        override suspend fun deleteAllExpenses() {
+            expenses.value = emptyList()
         }
     }
 
@@ -156,8 +184,8 @@ class ExpenseViewModelTest {
         val fakeLekkaDao = FakeLekkaDao()
         val fakeCategoryDao = FakeCategoryDao()
         val fakeExpenseDao = FakeExpenseDao()
-        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao)
-        val viewModel = ExpenseViewModel(repository)
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
 
         advanceUntilIdle()
 
@@ -167,13 +195,45 @@ class ExpenseViewModelTest {
         val masterLekka = lekkas.find { it.isMotherTable }
         assertNotNull(masterLekka)
         assertEquals("Master Expense Sheet", masterLekka!!.name)
-        assertTrue(masterLekka.isDefault)
+        assertFalse(masterLekka.isDefault)
 
         val childLekka = lekkas.find { !it.isMotherTable }
         assertNotNull(childLekka)
         assertEquals("Monthly Expenses", childLekka!!.name)
+        assertTrue(childLekka.isDefault)
         assertEquals(masterLekka.id, viewModel.selectedLekkaId.value)
         assertTrue(viewModel.isMotherTableSelected.value)
+    }
+
+    @Test
+    fun clearDatabase_clearsAllDataAndReseedsCleanState() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        advanceUntilIdle()
+
+        viewModel.addExpense("Lunch", 250.0, 1L, LocalDate.now())
+        advanceUntilIdle()
+        assertEquals(1, fakeExpenseDao.expenses.value.size)
+
+        viewModel.clearDatabase()
+        advanceUntilIdle()
+
+        assertEquals(0, fakeExpenseDao.expenses.value.size)
+
+        val lekkas = fakeLekkaDao.getAllLekkas().first()
+        assertEquals(2, lekkas.size)
+
+        val childLekka = lekkas.find { !it.isMotherTable }
+        assertNotNull(childLekka)
+        assertEquals("Monthly Expenses", childLekka!!.name)
+        assertTrue(childLekka.isDefault)
+
+        val categories = fakeCategoryDao.getAllCategories(childLekka.id).first()
+        assertEquals(8, categories.size)
     }
 
     @Test
@@ -181,8 +241,8 @@ class ExpenseViewModelTest {
         val fakeLekkaDao = FakeLekkaDao()
         val fakeCategoryDao = FakeCategoryDao()
         val fakeExpenseDao = FakeExpenseDao()
-        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao)
-        val viewModel = ExpenseViewModel(repository)
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
 
         advanceUntilIdle()
 
@@ -208,8 +268,8 @@ class ExpenseViewModelTest {
         val fakeLekkaDao = FakeLekkaDao()
         val fakeCategoryDao = FakeCategoryDao()
         val fakeExpenseDao = FakeExpenseDao()
-        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao)
-        val viewModel = ExpenseViewModel(repository)
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
 
         advanceUntilIdle()
 
@@ -239,8 +299,8 @@ class ExpenseViewModelTest {
         val fakeLekkaDao = FakeLekkaDao()
         val fakeCategoryDao = FakeCategoryDao()
         val fakeExpenseDao = FakeExpenseDao()
-        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao)
-        val viewModel = ExpenseViewModel(repository)
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
 
         advanceUntilIdle()
 
@@ -275,8 +335,8 @@ class ExpenseViewModelTest {
         val fakeLekkaDao = FakeLekkaDao()
         val fakeCategoryDao = FakeCategoryDao()
         val fakeExpenseDao = FakeExpenseDao()
-        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao)
-        val viewModel = ExpenseViewModel(repository)
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
 
         val collectorJob = launch { viewModel.mostRecentSheet.collect {} }
         advanceUntilIdle()
@@ -313,8 +373,10 @@ class ExpenseViewModelTest {
         val fakeLekkaDao = FakeLekkaDao()
         val fakeCategoryDao = FakeCategoryDao()
         val fakeExpenseDao = FakeExpenseDao()
-        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao)
-        val viewModel = ExpenseViewModel(repository)
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        advanceUntilIdle()
 
         val cat = Category(id = 1, lekkaId = 1, name = "Food", colorHex = "#FF0000", isIncome = false)
         val exp1 = Expense(id = 10, lekkaId = 1, description = "A", amount = 100.0, categoryId = 1, date = LocalDate.now())
@@ -340,8 +402,10 @@ class ExpenseViewModelTest {
         val fakeLekkaDao = FakeLekkaDao()
         val fakeCategoryDao = FakeCategoryDao()
         val fakeExpenseDao = FakeExpenseDao()
-        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao)
-        val viewModel = ExpenseViewModel(repository)
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        advanceUntilIdle()
 
         val cat = Category(id = 1, lekkaId = 1, name = "Food", colorHex = "#FF0000", isIncome = false)
         val exp1 = Expense(id = 10, lekkaId = 1, description = "A", amount = 100.0, categoryId = 1, date = LocalDate.now())
@@ -358,5 +422,145 @@ class ExpenseViewModelTest {
         val remaining = fakeExpenseDao.expenses.value
         assertEquals(1, remaining.size)
         assertEquals(20L, remaining.first().expense.id)
+    }
+
+    @Test
+    fun childLekkas_containsOnlyNonMotherTables() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        val collectorJob = launch { viewModel.childLekkas.collect {} }
+        advanceUntilIdle()
+
+        viewModel.addLekka("Goa Trip")
+        advanceUntilIdle()
+
+        val childLekkas = viewModel.childLekkas.value
+        assertEquals(2, childLekkas.size)
+        assertTrue(childLekkas.none { it.isMotherTable })
+        assertTrue(childLekkas.any { it.name == "Monthly Expenses" })
+        assertTrue(childLekkas.any { it.name == "Goa Trip" })
+
+        collectorJob.cancel()
+    }
+
+    @Test
+    fun addExpense_withTargetLekkaId_assignsToTargetLekka() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        advanceUntilIdle()
+
+        val goaTripId = fakeLekkaDao.insertLekka(Lekka(name = "Goa Trip", isMotherTable = false))
+        advanceUntilIdle()
+
+        val expense = Expense(lekkaId = 1L, description = "Hotel", amount = 1500.0, categoryId = 1L, date = LocalDate.now())
+        viewModel.addExpense(expense, targetLekkaId = goaTripId)
+        advanceUntilIdle()
+
+        val saved = fakeExpenseDao.expenses.value
+        assertEquals(1, saved.size)
+        assertEquals(goaTripId, saved.first().expense.lekkaId)
+        assertEquals("Hotel", saved.first().expense.description)
+    }
+
+    @Test
+    fun categories_incomeCategoryAlwaysReturnedFirst() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        val collectorJob = launch { viewModel.categories.collect {} }
+        advanceUntilIdle()
+
+        viewModel.selectLekka(2L)
+        advanceUntilIdle()
+
+        val categories = viewModel.categories.value
+        if (categories.isNotEmpty()) {
+            assertEquals("Income", categories.first().name)
+            assertTrue(categories.first().isIncome)
+        }
+        collectorJob.cancel()
+    }
+
+    @Test
+    fun deleteCategory_preventsIncomeCategoryDeletion() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        advanceUntilIdle()
+
+        val incomeCategory = Category(id = 1, lekkaId = 2, name = "Income", colorHex = "#2E7D32", isIncome = true)
+        val foodCategory = Category(id = 2, lekkaId = 2, name = "Food", colorHex = "#E53935", isIncome = false)
+        fakeCategoryDao.categories.value = listOf(incomeCategory, foodCategory)
+
+        viewModel.deleteCategory(incomeCategory)
+        advanceUntilIdle()
+
+        assertTrue("Income category must not be deleted", fakeCategoryDao.categories.value.contains(incomeCategory))
+
+        viewModel.deleteCategory(foodCategory)
+        advanceUntilIdle()
+
+        assertFalse("Food category should be deleted", fakeCategoryDao.categories.value.contains(foodCategory))
+    }
+
+    @Test
+    fun categories_updatesWhenSelectedLekkaChanges() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        val collectorJob = launch { viewModel.categories.collect {} }
+        advanceUntilIdle()
+
+        val lekka2Id = fakeLekkaDao.insertLekka(Lekka(name = "Trip Lekka", isMotherTable = false))
+        advanceUntilIdle()
+
+        viewModel.selectLekka(lekka2Id)
+        advanceUntilIdle()
+
+        val categories = viewModel.categories.value
+        assertEquals(8, categories.size)
+        assertTrue(categories.all { it.lekkaId == lekka2Id })
+        collectorJob.cancel()
+    }
+
+    @Test
+    fun categories_autoSeedsDefaultCategoriesIfTableHasNoCategories() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        val collectorJob = launch { viewModel.categories.collect {} }
+        advanceUntilIdle()
+
+        val emptyLekkaId = fakeLekkaDao.insertLekka(Lekka(name = "Empty Lekka", isMotherTable = false))
+        advanceUntilIdle()
+
+        viewModel.selectLekka(emptyLekkaId)
+        advanceUntilIdle()
+
+        val categoriesInDb = fakeCategoryDao.getAllCategories(emptyLekkaId).first()
+        assertEquals(8, categoriesInDb.size)
+        assertTrue(categoriesInDb.any { it.name == "Kirani" })
+        assertTrue(categoriesInDb.any { it.name == "Food" })
+        collectorJob.cancel()
     }
 }

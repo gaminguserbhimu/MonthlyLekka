@@ -1,11 +1,16 @@
 package com.vinay.monthlylekka.data
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 class AppRepository(
     private val categoryDao: CategoryDao,
     private val expenseDao: ExpenseDao,
-    private val lekkaDao: LekkaDao
+    private val lekkaDao: LekkaDao,
+    private val database: AppDatabase? = null,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     val allLekkas: Flow<List<Lekka>> = lekkaDao.getAllLekkas()
 
@@ -24,6 +29,58 @@ class AppRepository(
     fun getLekkaSummary(lekkaId: Long): Flow<LekkaSummary?> = expenseDao.getLekkaSummary(lekkaId)
 
     fun getMotherTableSummary(): Flow<LekkaSummary?> = expenseDao.getMotherTableSummary()
+
+    suspend fun populateDatabase() = withContext(Dispatchers.IO) {
+        if (lekkaDao.getLekkaCount() == 0) {
+            if (database != null) {
+                database.populateDatabase()
+            } else {
+                lekkaDao.insertLekka(Lekka(name = "Master Expense Sheet", isMotherTable = true, isDefault = false))
+                val defaultChildLekkaId = lekkaDao.insertLekka(Lekka(name = "Monthly Expenses", isMotherTable = false, isDefault = true))
+
+                val categories = listOf(
+                    Category(lekkaId = defaultChildLekkaId, name = "Income", colorHex = "#2E7D32", isIncome = true),
+                    Category(lekkaId = defaultChildLekkaId, name = "Kirani", colorHex = "#FFB300", isIncome = false),
+                    Category(lekkaId = defaultChildLekkaId, name = "Kaipalle", colorHex = "#43A047", isIncome = false),
+                    Category(lekkaId = defaultChildLekkaId, name = "Food", colorHex = "#E53935", isIncome = false),
+                    Category(lekkaId = defaultChildLekkaId, name = "Bills", colorHex = "#3949AB", isIncome = false),
+                    Category(lekkaId = defaultChildLekkaId, name = "Others", colorHex = "#757575", isIncome = false),
+                    Category(lekkaId = defaultChildLekkaId, name = "Travel", colorHex = "#1E88E5", isIncome = false),
+                    Category(lekkaId = defaultChildLekkaId, name = "Hospital", colorHex = "#D81B60", isIncome = false)
+                )
+                categories.forEach { categoryDao.insertCategory(it) }
+            }
+        }
+    }
+
+    suspend fun clearDatabase() = withContext(ioDispatcher) {
+        clearAllData()
+    }
+
+    suspend fun clearAllData() = withContext(ioDispatcher) {
+        if (database != null) {
+            database.clearDatabase()
+        } else {
+            expenseDao.deleteAllExpenses()
+            categoryDao.deleteAllCategories()
+            lekkaDao.deleteAllLekkas()
+
+            val masterLekkaId = lekkaDao.insertLekka(Lekka(name = "Master Expense Sheet", isMotherTable = true, isDefault = false))
+            val defaultChildLekkaId = lekkaDao.insertLekka(Lekka(name = "Monthly Expenses", isMotherTable = false, isDefault = true))
+
+            val categories = listOf(
+                Category(lekkaId = defaultChildLekkaId, name = "Income", colorHex = "#2E7D32", isIncome = true),
+                Category(lekkaId = defaultChildLekkaId, name = "Kirani", colorHex = "#FFB300", isIncome = false),
+                Category(lekkaId = defaultChildLekkaId, name = "Kaipalle", colorHex = "#43A047", isIncome = false),
+                Category(lekkaId = defaultChildLekkaId, name = "Food", colorHex = "#E53935", isIncome = false),
+                Category(lekkaId = defaultChildLekkaId, name = "Bills", colorHex = "#3949AB", isIncome = false),
+                Category(lekkaId = defaultChildLekkaId, name = "Others", colorHex = "#757575", isIncome = false),
+                Category(lekkaId = defaultChildLekkaId, name = "Travel", colorHex = "#1E88E5", isIncome = false),
+                Category(lekkaId = defaultChildLekkaId, name = "Hospital", colorHex = "#D81B60", isIncome = false)
+            )
+            categories.forEach { categoryDao.insertCategory(it) }
+        }
+    }
 
     suspend fun insertLekka(lekka: Lekka): Long {
         return lekkaDao.insertLekka(lekka)

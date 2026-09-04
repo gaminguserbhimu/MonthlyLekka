@@ -13,7 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Deselect
 import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material3.*
@@ -164,7 +164,7 @@ fun DashboardScreen(
                         }
                         if (!isMotherTable) {
                             IconButton(onClick = onManageCategoriesClick) {
-                                Icon(Icons.Default.Settings, contentDescription = "Manage Categories")
+                                Icon(Icons.Rounded.Category, contentDescription = "Manage Categories")
                             }
                         }
                     }

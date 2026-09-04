@@ -22,10 +22,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.vinay.monthlylekka.data.Category
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryManagementScreen(
     categories: List<Category>,
@@ -72,7 +73,7 @@ fun CategoryManagementScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
         ) {
-            items(categories) { category ->
+            items(categories, key = { it.id }) { category ->
                 CategoryItem(
                     category = category,
                     onEdit = {
@@ -90,7 +91,7 @@ fun CategoryManagementScreen(
                 onDismiss = { showDialog = false },
                 onConfirm = { name, color, isIncome ->
                     if (editingCategory == null) {
-                        onAddCategory(name, color, isIncome)
+                        onAddCategory(name, color, false)
                     } else {
                         onUpdateCategory(editingCategory!!.copy(name = name, colorHex = color, isIncome = isIncome))
                     }
@@ -107,6 +108,8 @@ fun CategoryItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val isSystemCategory = category.isIncome || category.name.equals("Income", ignoreCase = true)
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -138,17 +141,34 @@ fun CategoryItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = if (category.isIncome) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 )
+                if (isSystemCategory) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
+                    ) {
+                        Text(
+                            text = "System Category (Cannot be deleted)",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Medium),
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
             }
             IconButton(onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
             }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+            if (!isSystemCategory) {
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CategoryDialog(
     category: Category?,
@@ -157,7 +177,7 @@ fun CategoryDialog(
 ) {
     var name by remember { mutableStateOf(category?.name ?: "") }
     var colorHex by remember { mutableStateOf(category?.colorHex ?: "#757575") }
-    var isIncome by remember { mutableStateOf(category?.isIncome ?: false) }
+    val isIncome = category?.isIncome ?: false
 
     val presets = listOf(
         "#E53935", "#1E88E5", "#FFB300", "#43A047", "#8E24AA", "#757575",
@@ -177,13 +197,8 @@ fun CategoryDialog(
                     shape = RoundedCornerShape(12.dp)
                 )
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = isIncome, onCheckedChange = { isIncome = it })
-                    Text("Is Income Category")
-                }
-
                 Text("Select Color", style = MaterialTheme.typography.labelLarge)
-                
+
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -233,7 +248,7 @@ fun CategoryManagementPreview() {
     val dummyCategories = listOf(
         Category(id = 1, lekkaId = 1, name = "Income", colorHex = "#2E7D32", isIncome = true),
         Category(id = 2, lekkaId = 1, name = "Food", colorHex = "#E53935", isIncome = false),
-        Category(id = 3, lekkaId = 1, name = "Salary", colorHex = "#1E88E5", isIncome = true)
+        Category(id = 3, lekkaId = 1, name = "Kirani", colorHex = "#FFB300", isIncome = false)
     )
     MonthlyLekkaTheme {
         CategoryManagementScreen(

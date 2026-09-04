@@ -34,4 +34,7 @@ interface LekkaDao {
 
     @Query("SELECT * FROM lekkas WHERE isMotherTable = 0")
     fun getChildLekkas(): Flow<List<Lekka>>
+
+    @Query("DELETE FROM lekkas")
+    suspend fun deleteAllLekkas()
 }

@@ -592,13 +592,6 @@ fun MostRecentlyUpdatedExpenseSheetCard(
     onOpenSheet: () -> Unit
 ) {
     val balance = summary?.balance ?: 0.0
-    val dateRangeText = remember(sheet.startDate, sheet.endDate) {
-        if (!sheet.startDate.isNullOrBlank() || !sheet.endDate.isNullOrBlank()) {
-            "📅 ${sheet.startDate ?: ""} - ${sheet.endDate ?: ""}".trim(' ', '-')
-        } else {
-            "📅 No date range specified"
-        }
-    }
 
     Card(
         modifier = Modifier
@@ -649,11 +642,6 @@ fun MostRecentlyUpdatedExpenseSheetCard(
                     text = sheet.name,
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = dateRangeText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 

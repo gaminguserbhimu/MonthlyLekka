@@ -194,8 +194,8 @@ fun TablesScreen(
         LekkaDialog(
             title = "Create Expense Sheet",
             onDismiss = { showCreateDialog = false },
-            onConfirm = { name: String, startDate: String?, endDate: String?, isDefault: Boolean, categories: List<CategorySpec> ->
-                onCreateLekka(name, startDate, endDate, isDefault, categories)
+            onConfirm = { name: String, isDefault: Boolean, categories: List<CategorySpec> ->
+                onCreateLekka(name, null, null, isDefault, categories)
                 showCreateDialog = false
             }
         )
@@ -206,9 +206,9 @@ fun TablesScreen(
             title = "Edit Expense Sheet",
             initialLekka = lekkaToEdit,
             onDismiss = { lekkaToEdit = null },
-            onConfirm = { name: String, startDate: String?, endDate: String?, isDefault: Boolean, categories: List<CategorySpec> ->
+            onConfirm = { name: String, isDefault: Boolean, categories: List<CategorySpec> ->
                 lekkaToEdit?.let {
-                    onUpdateLekka(it.copy(name = name, startDate = startDate, endDate = endDate), isDefault, categories)
+                    onUpdateLekka(it.copy(name = name), isDefault, categories)
                 }
                 lekkaToEdit = null
             }
@@ -411,15 +411,6 @@ fun ChildTableCard(
                             )
                         }
                     }
-                }
-
-                if (!lekka.startDate.isNullOrBlank() || !lekka.endDate.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "📅 ${lekka.startDate ?: ""} - ${lekka.endDate ?: ""}".trim(' ', '-'),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))

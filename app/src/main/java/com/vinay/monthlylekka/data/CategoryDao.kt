@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CategoryDao {
-    @Query("SELECT * FROM categories WHERE lekkaId = :lekkaId")
+    @Query("SELECT * FROM categories WHERE lekkaId = :lekkaId ORDER BY isIncome DESC, name ASC")
     fun getAllCategories(lekkaId: Long): Flow<List<Category>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -22,4 +22,7 @@ interface CategoryDao {
 
     @Query("SELECT * FROM categories WHERE id = :id")
     suspend fun getCategoryById(id: Long): Category?
+
+    @Query("DELETE FROM categories")
+    suspend fun deleteAllCategories()
 }

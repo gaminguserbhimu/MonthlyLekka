@@ -44,6 +44,9 @@ interface ExpenseDao {
     @Query("DELETE FROM expenses WHERE id IN (:ids)")
     suspend fun deleteExpensesByIds(ids: List<Long>)
 
+    @Query("DELETE FROM expenses")
+    suspend fun deleteAllExpenses()
+
     @Query("""
         SELECT 
             substr(e.date, 1, 7) as month,
