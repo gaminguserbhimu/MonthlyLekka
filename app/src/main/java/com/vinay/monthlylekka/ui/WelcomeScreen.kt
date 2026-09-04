@@ -351,6 +351,31 @@ fun WelcomeScreen(
                     )
                 }
             }
+
+            // 7. Recent Transactions Section (if any)
+            if (recentExpenses.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 700.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Recent Transactions",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+
+                    recentExpenses.take(5).forEach { item ->
+                        ExpenseItemCard(
+                            item = item,
+                            isMotherTable = true,
+                            onExpenseClick = { onTableClick(item.expense.lekkaId) }
+                        )
+                    }
+                }
+            }
         }
     }
 

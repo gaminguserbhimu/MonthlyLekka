@@ -369,7 +369,6 @@ fun ExpenseList(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ExpenseListItem(
     item: ExpenseWithCategoryAndLekka,
@@ -379,142 +378,17 @@ fun ExpenseListItem(
     onToggleSelect: () -> Unit,
     onLongPressSelect: () -> Unit,
     onExpenseClick: (ExpenseWithCategoryAndLekka) -> Unit,
-    onDeleteExpense: (ExpenseWithCategoryAndLekka) -> Unit
+    onDeleteExpense: (ExpenseWithCategoryAndLekka) -> Unit = {}
 ) {
-    val expense = item.expense
-    val category = item.category
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = {
-                    if (isSelectionMode) {
-                        onToggleSelect()
-                    } else {
-                        onExpenseClick(item)
-                    }
-                },
-                onLongClick = {
-                    if (!isSelectionMode) {
-                        onLongPressSelect()
-                    } else {
-                        onToggleSelect()
-                    }
-                }
-            ),
-        shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Top Row: Checkbox + Date Badge + Category Avatar & Badge + Origin Tag + Delete button (when not in selection mode)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (isSelectionMode) {
-                    Checkbox(
-                        checked = isSelected,
-                        onCheckedChange = { onToggleSelect() }
-                    )
-                }
-
-                // Date Badge
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    Text(
-                        text = expense.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-
-                // Category Badge
-                CategoryIconAvatar(
-                    categoryName = category.name,
-                    colorHex = category.colorHex,
-                    isIncome = category.isIncome,
-                    size = 28.dp,
-                    iconSize = 16.dp
-                )
-
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                ) {
-                    Text(
-                        text = category.name,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-
-                // Origin Tag Pill (if Mother Table)
-                if (isMotherTable && item.lekkaName.isNotBlank()) {
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Text(
-                            text = "[${item.lekkaName}]",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                if (!isSelectionMode) {
-                    IconButton(
-                        onClick = { onDeleteExpense(item) },
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete Transaction",
-                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
-
-            // Description & Right-Aligned Cost Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = expense.description.ifBlank { "No description" },
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Text(
-                    text = "${if (category.isIncome) "+" else "-"} ${expense.amount.toCurrencyString()}",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                    color = if (category.isIncome) Color(0xFF2E7D32) else Color(0xFFD32F2F),
-                    textAlign = TextAlign.End
-                )
-            }
-        }
-    }
+    ExpenseItemCard(
+        item = item,
+        isMotherTable = isMotherTable,
+        isSelectionMode = isSelectionMode,
+        isSelected = isSelected,
+        onToggleSelect = onToggleSelect,
+        onLongPressSelect = onLongPressSelect,
+        onExpenseClick = onExpenseClick
+    )
 }
 
 @Composable
