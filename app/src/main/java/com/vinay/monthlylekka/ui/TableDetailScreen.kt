@@ -18,6 +18,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
+import androidx.compose.material.icons.automirrored.rounded.TrendingDown
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -379,11 +381,55 @@ fun TransactionsSlide(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Total Transactions: ${expenses.size}",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                    val totalIncome = remember(expenses) {
+                        expenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
+                    }
+                    val totalOutcome = remember(expenses) {
+                        expenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Income Pill
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.TrendingUp,
+                                contentDescription = "Total Income",
+                                tint = Color(0xFF10B981),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = totalIncome.toCurrencyString(),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF10B981)
+                            )
+                        }
+
+                        // Outcome Pill
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.TrendingDown,
+                                contentDescription = "Total Outcome",
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = totalOutcome.toCurrencyString(),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFEF4444)
+                            )
+                        }
+                    }
                     if (isSelectionMode) {
                         Text(
                             text = "${selectedExpenseIds.size} Selected",
