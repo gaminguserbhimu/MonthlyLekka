@@ -29,8 +29,14 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses WHERE lekkaId = :lekkaId ORDER BY date DESC")
     fun getExpensesWithCategory(lekkaId: Long): Flow<List<ExpenseWithCategory>>
 
+    @Query("SELECT * FROM expenses")
+    fun getAllExpensesList(): Flow<List<Expense>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExpense(expense: Expense)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertExpenses(expenses: List<Expense>)
 
     @Update
     suspend fun updateExpense(expense: Expense)

@@ -1,5 +1,8 @@
 package com.vinay.monthlylekka.ui.viewmodel
 
+import android.content.Context
+import android.net.Uri
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -7,6 +10,7 @@ import com.vinay.monthlylekka.data.AppRepository
 import com.vinay.monthlylekka.data.Category
 import com.vinay.monthlylekka.data.CategorySpec
 import com.vinay.monthlylekka.data.DEFAULT_CATEGORY_SPECS
+import com.vinay.monthlylekka.data.DataExportManager
 import com.vinay.monthlylekka.data.Expense
 import com.vinay.monthlylekka.data.ExpenseWithCategoryAndLekka
 import com.vinay.monthlylekka.data.Lekka
@@ -21,12 +25,14 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.util.Collections
 
@@ -447,6 +453,82 @@ class ExpenseViewModel(
         if (lekka.isMotherTable) return // Mother Table cannot be deleted
         viewModelScope.launch(ioDispatcher) {
             repository.deleteLekka(lekka)
+        }
+    }
+
+    fun exportCsvToUri(context: Context, uri: Uri) {
+        viewModelScope.launch(ioDispatcher) {
+            try {
+                val allExpenses = repository.getAllExpensesWithCategoryAndLekka().first()
+                val csvContent = DataExportManager.generateCsv(allExpenses)
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(csvContent.toByteArray(Charsets.UTF_8))
+                }
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "CSV Exported Successfully!", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Failed to export CSV: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    fun exportBackupToUri(context: Context, uri: Uri) {
+        viewModelScope.launch(ioDispatcher) {
+            try {
+                val tables = repository.allLekkas.first()
+                val categories = repository.getAllCategories().first()
+                val expenses = repository.getAllExpenses().first()
+                val jsonContent = DataExportManager.generateJsonBackup(tables, categories, expenses)
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(jsonContent.toByteArray(Charsets.UTF_8))
+                }
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Backup Exported Successfully!", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Failed to export backup: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    fun importBackupFromUri(
+        context: Context,
+        uri: Uri,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch(ioDispatcher) {
+            try {
+                val jsonContent = context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    inputStream.bufferedReader(Charsets.UTF_8).readText()
+                } ?: ""
+
+                val backupData = DataExportManager.parseJsonBackup(jsonContent)
+                if (backupData != null) {
+                    repository.restoreBackupData(backupData)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Backup Restored Successfully!", Toast.LENGTH_SHORT).show()
+                        onSuccess()
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        val msg = "Invalid or corrupted backup file format."
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        onError(msg)
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    val msg = e.localizedMessage ?: "Failed to restore backup"
+                    Toast.makeText(context, "Error restoring backup: $msg", Toast.LENGTH_SHORT).show()
+                    onError(msg)
+                }
+            }
         }
     }
 }

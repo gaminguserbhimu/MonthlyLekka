@@ -11,6 +11,9 @@ interface LekkaDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLekka(lekka: Lekka): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLekkas(lekkas: List<Lekka>)
+
     @Update
     suspend fun updateLekka(lekka: Lekka)
 

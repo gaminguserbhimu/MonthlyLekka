@@ -23,6 +23,9 @@ interface CategoryDao {
     """)
     fun getAllCategories(lekkaId: Long): Flow<List<Category>>
 
+    @Query("SELECT * FROM categories")
+    fun getAllCategoriesList(): Flow<List<Category>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategory(category: Category)
 

@@ -15,12 +15,16 @@ class AppRepository(
     val allLekkas: Flow<List<Lekka>> = lekkaDao.getAllLekkas()
 
     fun getCategoriesByLekka(lekkaId: Long): Flow<List<Category>> = categoryDao.getCategoriesByLekka(lekkaId)
+
+    fun getAllCategories(): Flow<List<Category>> = categoryDao.getAllCategoriesList()
     
     fun getExpensesByLekka(lekkaId: Long): Flow<List<ExpenseWithCategory>> = expenseDao.getExpensesWithCategory(lekkaId)
 
     fun getExpensesWithCategoryAndLekka(lekkaId: Long): Flow<List<ExpenseWithCategoryAndLekka>> = expenseDao.getExpensesWithCategoryAndLekka(lekkaId)
 
     fun getAllExpensesWithCategoryAndLekka(): Flow<List<ExpenseWithCategoryAndLekka>> = expenseDao.getAllExpensesWithCategoryAndLekka()
+
+    fun getAllExpenses(): Flow<List<Expense>> = expenseDao.getAllExpensesList()
     
     fun getMonthlySummariesByLekka(lekkaId: Long): Flow<List<MonthlySummary>> = expenseDao.getMonthlySummaries(lekkaId)
 
@@ -152,5 +156,39 @@ class AppRepository(
 
     suspend fun deleteExpensesByIds(ids: List<Long>) {
         expenseDao.deleteExpensesByIds(ids)
+    }
+
+    suspend fun restoreBackupData(backupData: BackupData) = withContext(ioDispatcher) {
+        if (database != null) {
+            database.clearAllTables()
+        } else {
+            expenseDao.deleteAllExpenses()
+            categoryDao.deleteAllCategories()
+            lekkaDao.deleteAllLekkas()
+        }
+
+        if (backupData.tables.isNotEmpty()) {
+            lekkaDao.insertLekkas(backupData.tables)
+        }
+
+        if (lekkaDao.getMotherTable() == null) {
+            lekkaDao.insertLekka(Lekka(name = "Master Expense Table", isMotherTable = true, isDefault = false))
+        }
+
+        if (backupData.categories.isNotEmpty()) {
+            categoryDao.insertCategories(backupData.categories)
+        }
+
+        val insertedLekkaIds = backupData.tables.map { it.id }.toSet()
+        val insertedCategoryIds = backupData.categories.map { it.id }.toSet()
+
+        val validExpenses = backupData.expenses.filter {
+            (insertedLekkaIds.isEmpty() || it.lekkaId in insertedLekkaIds) &&
+            (insertedCategoryIds.isEmpty() || it.categoryId in insertedCategoryIds)
+        }
+
+        if (validExpenses.isNotEmpty()) {
+            expenseDao.insertExpenses(validExpenses)
+        }
     }
 }

@@ -1,16 +1,24 @@
 package com.vinay.monthlylekka.ui
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.FileDownload
+import androidx.compose.material.icons.rounded.FileUpload
+import androidx.compose.material.icons.rounded.SaveAlt
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material3.*
@@ -19,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -28,7 +37,6 @@ import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.LekkaWithSummary
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,11 +49,32 @@ fun TablesScreen(
     onCreateLekka: (String, String?, String?, Boolean, List<CategorySpec>) -> Unit,
     onUpdateLekka: (Lekka, Boolean, List<CategorySpec>?) -> Unit,
     onDeleteLekka: (Lekka) -> Unit,
+    onExportCsv: (Uri) -> Unit = {},
+    onExportBackup: (Uri) -> Unit = {},
+    onImportBackup: (Uri) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showCreateDialog by remember { mutableStateOf(false) }
     var lekkaToEdit by remember { mutableStateOf<Lekka?>(null) }
     var showDeleteConfirm by remember { mutableStateOf<Lekka?>(null) }
+
+    val exportCsvLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri: Uri? ->
+        uri?.let { onExportCsv(it) }
+    }
+
+    val exportJsonLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        uri?.let { onExportBackup(it) }
+    }
+
+    val importJsonLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { onImportBackup(it) }
+    }
 
     val masterLekkaWithSummary = lekkas.find { it.lekka.isMotherTable } ?: lekkas.firstOrNull()
     val childLekkas = lekkas.filter { !it.lekka.isMotherTable }
@@ -185,6 +214,29 @@ fun TablesScreen(
                             onDelete = { showDeleteConfirm = item.lekka }
                         )
                     }
+                }
+            }
+
+            // Section 3: Data Backup & Export
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 700.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "DATA BACKUP & EXPORT",
+                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.2.sp),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    DataBackupSection(
+                        onExportCsvClick = { exportCsvLauncher.launch("monthly_lekka_expenses.csv") },
+                        onExportBackupClick = { exportJsonLauncher.launch("monthly_lekka_backup.json") },
+                        onImportBackupClick = { importJsonLauncher.launch("application/json") }
+                    )
                 }
             }
         }
@@ -478,5 +530,112 @@ fun TablesScreenPreview() {
             onUpdateLekka = { _, _, _ -> },
             onDeleteLekka = {}
         )
+    }
+}
+
+@Composable
+fun DataBackupSection(
+    onExportCsvClick: () -> Unit,
+    onExportBackupClick: () -> Unit,
+    onImportBackupClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = SolidColor(Color(0xFFE2E8F0))
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.SaveAlt,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Column {
+                    Text(
+                        text = "Data Backup & Export",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Export transactions to CSV or manage JSON backups",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onExportCsvClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Description,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("📄 Export to CSV (Excel)", fontWeight = FontWeight.SemiBold)
+                }
+
+                FilledTonalButton(
+                    onClick = onExportBackupClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.FileUpload,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("📦 Export Backup (JSON)", fontWeight = FontWeight.SemiBold)
+                }
+
+                Button(
+                    onClick = onImportBackupClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.FileDownload,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("📥 Import Backup (JSON)", fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
     }
 }

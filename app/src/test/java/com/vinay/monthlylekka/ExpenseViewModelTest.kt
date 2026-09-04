@@ -1,6 +1,7 @@
 package com.vinay.monthlylekka
 
 import com.vinay.monthlylekka.data.AppRepository
+import com.vinay.monthlylekka.data.BackupData
 import com.vinay.monthlylekka.data.Category
 import com.vinay.monthlylekka.data.CategoryDao
 import com.vinay.monthlylekka.data.CategorySpec
@@ -51,6 +52,10 @@ class ExpenseViewModelTest {
             val newLekka = lekka.copy(id = id)
             lekkas.value = lekkas.value.filter { it.id != id } + newLekka
             return id
+        }
+
+        override suspend fun insertLekkas(lekkas: List<Lekka>) {
+            lekkas.forEach { insertLekka(it) }
         }
 
         override suspend fun updateLekka(lekka: Lekka) {
@@ -110,6 +115,8 @@ class ExpenseViewModelTest {
             return getCategoriesByLekka(lekkaId)
         }
 
+        override fun getAllCategoriesList(): Flow<List<Category>> = categories
+
         override suspend fun insertCategory(category: Category) {
             val id = if (category.id == 0L) nextId++ else category.id
             categories.value = categories.value + category.copy(id = id)
@@ -153,6 +160,8 @@ class ExpenseViewModelTest {
             return expenses.map { list -> list.filter { it.expense.lekkaId == lekkaId }.map { it.toExpenseWithCategory() } }
         }
 
+        override fun getAllExpensesList(): Flow<List<Expense>> = expenses.map { list -> list.map { it.expense } }
+
         override fun getMonthlySummaries(lekkaId: Long): Flow<List<MonthlySummary>> = MutableStateFlow(emptyList())
 
         override fun getAllMonthlySummaries(): Flow<List<MonthlySummary>> = MutableStateFlow(emptyList())
@@ -167,6 +176,10 @@ class ExpenseViewModelTest {
             val cat = Category(id = expense.categoryId, lekkaId = expense.lekkaId, name = "Food", colorHex = "#FF0000", isIncome = false)
             val item = ExpenseWithCategoryAndLekka(newExpense, cat, "Lekka $id")
             expenses.value = expenses.value + item
+        }
+
+        override suspend fun insertExpenses(expenses: List<Expense>) {
+            expenses.forEach { insertExpense(it) }
         }
         override suspend fun updateExpense(expense: Expense) {
             val cat = Category(id = expense.categoryId, lekkaId = expense.lekkaId, name = "Food", colorHex = "#FF0000", isIncome = false)
@@ -648,5 +661,44 @@ class ExpenseViewModelTest {
         assertEquals("Travel", sortedCategories[2].name)
 
         collectorJob.cancel()
+    }
+
+    @Test
+    fun restoreBackupData_restoresTablesCategoriesAndExpenses() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+
+        advanceUntilIdle()
+
+        val backupTables = listOf(
+            Lekka(id = 1, name = "Master Expense Table", isMotherTable = true, isDefault = false),
+            Lekka(id = 2, name = "Restored Table", isMotherTable = false, isDefault = true)
+        )
+        val backupCategories = listOf(
+            Category(id = 10, lekkaId = 2, name = "Shopping", colorHex = "#123456", isIncome = false)
+        )
+        val backupExpenses = listOf(
+            Expense(id = 100, lekkaId = 2, description = "Shoes", amount = 1999.0, categoryId = 10, date = LocalDate.of(2026, 3, 20))
+        )
+
+        val backupData = BackupData(tables = backupTables, categories = backupCategories, expenses = backupExpenses)
+
+        repository.restoreBackupData(backupData)
+        advanceUntilIdle()
+
+        val lekkas = fakeLekkaDao.getAllLekkas().first()
+        assertEquals(2, lekkas.size)
+        assertTrue(lekkas.any { it.name == "Restored Table" })
+
+        val categories = fakeCategoryDao.categories.value
+        assertEquals(1, categories.size)
+        assertEquals("Shopping", categories.first().name)
+
+        val expenses = fakeExpenseDao.expenses.value
+        assertEquals(1, expenses.size)
+        assertEquals("Shoes", expenses.first().expense.description)
+        assertEquals(1999.0, expenses.first().expense.amount, 0.01)
     }
 }

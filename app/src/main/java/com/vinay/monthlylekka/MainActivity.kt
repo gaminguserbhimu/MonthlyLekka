@@ -23,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
@@ -46,6 +47,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MonthlyLekkaTheme {
+                val context = LocalContext.current
                 val viewModel: ExpenseViewModel = viewModel(
                     factory = ExpenseViewModelFactory((application as MonthlyLekkaApplication).repository)
                 )
@@ -118,7 +120,10 @@ class MainActivity : ComponentActivity() {
                                         onUpdateLekka = { lekka, isDefault, categories ->
                                             viewModel.updateLekka(lekka, isDefault, categories)
                                         },
-                                        onDeleteLekka = viewModel::deleteLekka
+                                        onDeleteLekka = viewModel::deleteLekka,
+                                        onExportCsv = { uri -> viewModel.exportCsvToUri(context, uri) },
+                                        onExportBackup = { uri -> viewModel.exportBackupToUri(context, uri) },
+                                        onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) }
                                     )
                                 } else {
                                     val currentLekkaWithSummary = allLekkasWithSummary.find { it.lekka.id == selectedLekkaId }
@@ -209,7 +214,10 @@ class MainActivity : ComponentActivity() {
                                         HelpScreen(
                                             onBack = {
                                                 backStack = backStack.filterNot { it is Route.Help }
-                                            }
+                                            },
+                                            onExportCsv = { uri -> viewModel.exportCsvToUri(context, uri) },
+                                            onExportBackup = { uri -> viewModel.exportBackupToUri(context, uri) },
+                                            onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) }
                                         )
                                     }
                                     else -> {
@@ -283,7 +291,10 @@ class MainActivity : ComponentActivity() {
                                         onUpdateLekka = { lekka, isDefault, categories ->
                                             viewModel.updateLekka(lekka, isDefault, categories)
                                         },
-                                        onDeleteLekka = viewModel::deleteLekka
+                                        onDeleteLekka = viewModel::deleteLekka,
+                                        onExportCsv = { uri -> viewModel.exportCsvToUri(context, uri) },
+                                        onExportBackup = { uri -> viewModel.exportBackupToUri(context, uri) },
+                                        onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) }
                                     )
                                 }
                                 is Route.TableDetail -> NavEntry(key) {
@@ -391,7 +402,10 @@ class MainActivity : ComponentActivity() {
                                     HelpScreen(
                                         onBack = {
                                             if (backStack.size > 1) backStack = backStack.dropLast(1)
-                                        }
+                                        },
+                                        onExportCsv = { uri -> viewModel.exportCsvToUri(context, uri) },
+                                        onExportBackup = { uri -> viewModel.exportBackupToUri(context, uri) },
+                                        onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) }
                                     )
                                 }
                             }

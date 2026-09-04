@@ -1,5 +1,8 @@
 package com.vinay.monthlylekka.ui
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,8 +56,28 @@ import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 @Composable
 fun HelpScreen(
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onExportCsv: (Uri) -> Unit = {},
+    onExportBackup: (Uri) -> Unit = {},
+    onImportBackup: (Uri) -> Unit = {}
 ) {
+    val exportCsvLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri: Uri? ->
+        uri?.let { onExportCsv(it) }
+    }
+
+    val exportJsonLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        uri?.let { onExportBackup(it) }
+    }
+
+    val importJsonLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { onImportBackup(it) }
+    }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -260,6 +283,13 @@ fun HelpScreen(
                     description = "Your most frequently used categories automatically bubble up to the top of the category dropdown right below Income, minimizing taps during logging."
                 )
             }
+
+            // Section 6: 💾 Data Backup & Export
+            DataBackupSection(
+                onExportCsvClick = { exportCsvLauncher.launch("monthly_lekka_expenses.csv") },
+                onExportBackupClick = { exportJsonLauncher.launch("monthly_lekka_backup.json") },
+                onImportBackupClick = { importJsonLauncher.launch("application/json") }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
         }
