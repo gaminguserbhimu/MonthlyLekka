@@ -23,7 +23,7 @@ import com.vinay.monthlylekka.data.Lekka
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LekkaDialog(
-    title: String = "Create Expense Sheet",
+    title: String = "Create Expense Table",
     initialLekka: Lekka? = null,
     initialCategories: List<CategorySpec>? = null,
     onDismiss: () -> Unit,
@@ -55,7 +55,7 @@ fun LekkaDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Expense Sheet Name *") },
+                    label = { Text("Expense Table Name *") },
                     placeholder = { Text("e.g. Home Expenses, Goa Trip") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
@@ -74,7 +74,7 @@ fun LekkaDialog(
                         onCheckedChange = { isDefault = it }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Set as Default Expense Sheet", style = MaterialTheme.typography.bodyMedium)
+                    Text("Set as Default Expense Table", style = MaterialTheme.typography.bodyMedium)
                 }
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
@@ -88,7 +88,7 @@ fun LekkaDialog(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Select default categories or add custom expense categories for this sheet:",
+                        text = "Select default categories or add custom expense categories for this table:",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

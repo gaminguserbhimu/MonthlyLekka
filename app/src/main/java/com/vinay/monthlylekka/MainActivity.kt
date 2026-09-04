@@ -29,6 +29,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.vinay.monthlylekka.ui.AddExpenseScreen
 import com.vinay.monthlylekka.ui.AnalyticsScreen
 import com.vinay.monthlylekka.ui.CategoryManagementScreen
+import com.vinay.monthlylekka.ui.HelpScreen
 import com.vinay.monthlylekka.ui.Route
 import com.vinay.monthlylekka.ui.TableDetailScreen
 import com.vinay.monthlylekka.ui.TablesScreen
@@ -53,7 +54,7 @@ class MainActivity : ComponentActivity() {
                 val selectedLekkaId by viewModel.selectedLekkaId.collectAsState()
                 val isMotherTableSelected by viewModel.isMotherTableSelected.collectAsState()
                 val motherTableSummary by viewModel.motherTableSummary.collectAsState()
-                val mostRecentSheet by viewModel.mostRecentSheet.collectAsState()
+                val mostRecentTable by viewModel.mostRecentTable.collectAsState()
                 
                 val expenses by viewModel.expenses.collectAsState()
                 val categories by viewModel.categories.collectAsState()
@@ -84,6 +85,7 @@ class MainActivity : ComponentActivity() {
                         is Route.AddExpense -> navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, currentRoute)
                         is Route.CategoryManagement -> navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, currentRoute)
                         is Route.Analytics -> navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, currentRoute)
+                        is Route.Help -> navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, currentRoute)
                         is Route.Dashboard -> navigator.navigateTo(ListDetailPaneScaffoldRole.List)
                         is Route.TableDetail -> navigator.navigateTo(ListDetailPaneScaffoldRole.List)
                         is Route.Tables -> navigator.navigateTo(ListDetailPaneScaffoldRole.List)
@@ -203,6 +205,13 @@ class MainActivity : ComponentActivity() {
                                             }
                                         )
                                     }
+                                    is Route.Help -> {
+                                        HelpScreen(
+                                            onBack = {
+                                                backStack = backStack.filterNot { it is Route.Help }
+                                            }
+                                        )
+                                    }
                                     else -> {
                                         Surface(
                                             modifier = Modifier.fillMaxSize(),
@@ -233,7 +242,7 @@ class MainActivity : ComponentActivity() {
                                     WelcomeScreen(
                                         lekkas = allLekkasWithSummary,
                                         selectedLekkaId = selectedLekkaId,
-                                        mostRecentSheet = mostRecentSheet,
+                                        mostRecentTable = mostRecentTable,
                                         motherTableSummary = motherTableSummary,
                                         recentExpenses = expenses,
                                         onLekkaSelected = viewModel::selectLekka,
@@ -245,8 +254,15 @@ class MainActivity : ComponentActivity() {
                                             viewModel.selectLekka(id)
                                             backStack = backStack + Route.TableDetail(id)
                                         },
+                                        onTableClick = { id ->
+                                            viewModel.selectLekka(id)
+                                            backStack = backStack + Route.TableDetail(id)
+                                        },
                                         onManageAllTablesClick = {
                                             backStack = backStack + Route.Tables
+                                        },
+                                        onHelpClick = {
+                                            backStack = backStack + Route.Help
                                         }
                                     )
                                 }
@@ -367,6 +383,13 @@ class MainActivity : ComponentActivity() {
                                     AnalyticsScreen(
                                         summaries = monthlySummaries,
                                         expenses = expenses.map { it.toExpenseWithCategory() },
+                                        onBack = {
+                                            if (backStack.size > 1) backStack = backStack.dropLast(1)
+                                        }
+                                    )
+                                }
+                                is Route.Help -> NavEntry(key) {
+                                    HelpScreen(
                                         onBack = {
                                             if (backStack.size > 1) backStack = backStack.dropLast(1)
                                         }

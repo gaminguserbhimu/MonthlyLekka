@@ -1,17 +1,23 @@
 package com.vinay.monthlylekka.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -25,6 +31,11 @@ import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,7 +119,7 @@ fun BarChart(summaries: List<MonthlySummary>) {
     val maxVal = chartData.maxOf { maxOf(it.totalIncome, it.totalExpense) }.coerceAtLeast(1.0)
     
     val incomeColor = Color(0xFF4CAF50) // Green
-    val expenseColor = Color(0xFFF06292) // Pink (as requested)
+    val expenseColor = Color(0xFFF06292) // Pink
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -183,11 +194,30 @@ fun BarChart(summaries: List<MonthlySummary>) {
 }
 
 @Composable
-fun LegendItem(label: String, color: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(12.dp).background(color, RoundedCornerShape(2.dp)))
+fun LegendItem(
+    label: String,
+    color: Color,
+    isSelected: Boolean = false,
+    onClick: (() -> Unit)? = null
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .padding(horizontal = 4.dp, vertical = 2.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(if (isSelected) 14.dp else 12.dp)
+                .background(color, RoundedCornerShape(if (isSelected) 4.dp else 2.dp))
+        )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(text = label, style = MaterialTheme.typography.labelMedium)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
@@ -226,10 +256,10 @@ fun SummaryTable(summaries: List<MonthlySummary>) {
                         summary.month
                     }
                     TableCell(text = formattedMonth, weight = 1f)
-                    TableCell(text = "₹${"%.0f".format(summary.totalIncome)}", weight = 1.2f, color = Color(0xFF2E7D32), textAlign = TextAlign.End)
-                    TableCell(text = "₹${"%.0f".format(summary.totalExpense)}", weight = 1.2f, color = Color(0xFFC62828), textAlign = TextAlign.End)
+                    TableCell(text = summary.totalIncome.toCurrencyString(), weight = 1.2f, color = Color(0xFF2E7D32), textAlign = TextAlign.End)
+                    TableCell(text = summary.totalExpense.toCurrencyString(), weight = 1.2f, color = Color(0xFFC62828), textAlign = TextAlign.End)
                     TableCell(
-                        text = "₹${"%.0f".format(summary.netBalance)}",
+                        text = summary.netBalance.toCurrencyString(),
                         weight = 1.2f,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.End,
@@ -267,10 +297,12 @@ fun RowScope.TableCell(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PieChart(expenses: List<ExpenseWithCategory>) {
-    val expenseData = expenses
-        .filter { !it.category.isIncome }
-        .groupBy { it.category.name }
-        .mapValues { it.value.sumOf { exp -> exp.expense.amount } }
+    val expenseData = remember(expenses) {
+        expenses
+            .filter { !it.category.isIncome }
+            .groupBy { it.category.name }
+            .mapValues { it.value.sumOf { exp -> exp.expense.amount } }
+    }
     
     if (expenseData.isEmpty()) {
         Card(
@@ -286,28 +318,83 @@ fun PieChart(expenses: List<ExpenseWithCategory>) {
     }
 
     val total = expenseData.values.sum()
-    val categoryColors = expenses.associateBy({ it.category.name }, { Color(it.category.colorHex.toColorInt()) })
+    val categoryColors = remember(expenses) {
+        expenses.associateBy({ it.category.name }, { Color(it.category.colorHex.toColorInt()) })
+    }
+
+    var selectedCategoryName by remember(expenseData) {
+        mutableStateOf<String?>(expenseData.keys.firstOrNull())
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = CardDefaults.outlinedCardBorder()
     ) {
         Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Expenses by Category", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(24.dp))
             
             Box(modifier = Modifier.size(200.dp), contentAlignment = Alignment.Center) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(expenseData, total) {
+                            detectTapGestures { tapOffset ->
+                                val centerX = size.width / 2f
+                                val centerY = size.height / 2f
+                                val dx = tapOffset.x - centerX
+                                val dy = tapOffset.y - centerY
+                                val distance = sqrt(dx * dx + dy * dy)
+                                val maxRadius = min(size.width, size.height) / 2f
+
+                                if (distance <= maxRadius && total > 0) {
+                                    var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                                    if (angle < 0) angle += 360f
+                                    val touchAngle = (angle - 270f + 360f) % 360f
+
+                                    var currentSweep = 0f
+                                    for ((catName, amount) in expenseData) {
+                                        val sweep = ((amount / total) * 360f).toFloat()
+                                        if (touchAngle >= currentSweep && touchAngle <= currentSweep + sweep) {
+                                            selectedCategoryName = catName
+                                            break
+                                        }
+                                        currentSweep += sweep
+                                    }
+                                }
+                            }
+                        }
+                ) {
                     var startAngle = -90f
                     expenseData.forEach { (name, amount) ->
-                        val sweepAngle = (amount / total).toFloat() * 360f
-                        drawArc(
-                            color = categoryColors[name] ?: Color.Gray,
-                            startAngle = startAngle,
-                            sweepAngle = sweepAngle,
-                            useCenter = true
-                        )
+                        val sweepAngle = ((amount / total) * 360f).toFloat()
+                        val isSelected = (name == selectedCategoryName)
+                        val color = categoryColors[name] ?: Color.Gray
+
+                        if (isSelected) {
+                            val midAngleRad = Math.toRadians((startAngle + sweepAngle / 2f).toDouble())
+                            val offsetDistance = 10.dp.toPx()
+                            val dx = (cos(midAngleRad) * offsetDistance).toFloat()
+                            val dy = (sin(midAngleRad) * offsetDistance).toFloat()
+
+                            translate(left = dx, top = dy) {
+                                drawArc(
+                                    color = color,
+                                    startAngle = startAngle,
+                                    sweepAngle = sweepAngle,
+                                    useCenter = true
+                                )
+                            }
+                        } else {
+                            drawArc(
+                                color = color,
+                                startAngle = startAngle,
+                                sweepAngle = sweepAngle,
+                                useCenter = true
+                            )
+                        }
                         startAngle += sweepAngle
                     }
                 }
@@ -315,15 +402,88 @@ fun PieChart(expenses: List<ExpenseWithCategory>) {
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Legend
+            // Legend with tap selection
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 expenseData.forEach { (name, _) ->
-                    LegendItem(name, categoryColors[name] ?: Color.Gray)
+                    LegendItem(
+                        label = name,
+                        color = categoryColors[name] ?: Color.Gray,
+                        isSelected = (name == selectedCategoryName),
+                        onClick = { selectedCategoryName = name }
+                    )
                     Spacer(modifier = Modifier.width(16.dp))
+                }
+            }
+
+            // Interactive Category Details Card
+            if (selectedCategoryName != null) {
+                val selAmount = expenseData[selectedCategoryName] ?: 0.0
+                val percent = if (total > 0) (selAmount / total * 100) else 0.0
+                val selColor = categoryColors[selectedCategoryName] ?: Color.Gray
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 20.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = selColor.copy(alpha = 0.12f)),
+                    border = BorderStroke(1.5.dp, selColor.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .background(selColor, CircleShape)
+                            )
+                            Column {
+                                Text(
+                                    text = selectedCategoryName ?: "",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Selected Category",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = selAmount.toCurrencyString(),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = selColor.copy(alpha = 0.25f)
+                            ) {
+                                Text(
+                                    text = "${"%.1f".format(percent)}%",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -376,7 +536,7 @@ fun CategoryBreakdownTable(expenses: List<ExpenseWithCategory>) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(category, style = MaterialTheme.typography.bodyMedium)
-                            Text("₹${"%.0f".format(total)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                            Text(total.toCurrencyString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                         }
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 8.dp),

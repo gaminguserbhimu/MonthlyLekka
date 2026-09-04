@@ -1,10 +1,12 @@
 package com.vinay.monthlylekka.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,11 +42,16 @@ import com.vinay.monthlylekka.data.ExpenseWithCategoryAndLekka
 import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.MonthlySummary
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.sin
+import kotlin.math.sqrt
+import kotlinx.coroutines.launch
 
 data class YearlySummary(
     val year: String,
@@ -167,7 +176,7 @@ fun TableDetailScreen(
                                         color = Color(0xFFF59E0B)
                                     ) {
                                         Text(
-                                            text = "👑 MASTER EXPENSE SHEET",
+                                            text = "👑 MASTER EXPENSE TABLE",
                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                             color = Color.White,
                                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -176,7 +185,7 @@ fun TableDetailScreen(
                                 }
                             }
                             Text(
-                                text = if (isMotherTable) "Aggregated Overview across all expense sheets" else "Expense Sheet Details & Analytics",
+                                text = if (isMotherTable) "Aggregated Overview across all expense tables" else "Expense Table Details & Analytics",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -214,7 +223,7 @@ fun TableDetailScreen(
                     icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
                     text = {
                         Text(
-                            if (isMotherTable) "Add Expense (Select Expense Sheet)" else "Add Expense",
+                            if (isMotherTable) "Add Expense (Select Expense Table)" else "Add Expense",
                             fontWeight = FontWeight.Bold
                         )
                     },
@@ -542,7 +551,7 @@ fun TransactionRowFormatted(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                val amountText = "${if (category.isIncome) "+" else "-"} ₹${String.format(Locale.getDefault(), "%,.2f", expense.amount)}"
+                val amountText = "${if (category.isIncome) "+" else "-"} ${expense.amount.toCurrencyString()}"
                 val amountColor = if (category.isIncome) Color(0xFF10B981) else Color(0xFFEF4444)
 
                 Text(
@@ -703,6 +712,10 @@ fun SinglePieChartCard(
 
     val totalAmount = groupedData.values.sum()
 
+    var selectedCategoryName by remember(groupedData) {
+        mutableStateOf<String?>(groupedData.keys.firstOrNull())
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -753,16 +766,64 @@ fun SinglePieChartCard(
                     modifier = Modifier.size(180.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerInput(groupedData, totalAmount) {
+                                detectTapGestures { tapOffset ->
+                                    val centerX = size.width / 2f
+                                    val centerY = size.height / 2f
+                                    val dx = tapOffset.x - centerX
+                                    val dy = tapOffset.y - centerY
+                                    val distance = sqrt(dx * dx + dy * dy)
+                                    val maxRadius = min(size.width, size.height) / 2f
+
+                                    if (distance <= maxRadius && totalAmount > 0) {
+                                        var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                                        if (angle < 0) angle += 360f
+                                        val touchAngle = (angle - 270f + 360f) % 360f
+
+                                        var currentSweep = 0f
+                                        for ((catName, amount) in groupedData) {
+                                            val sweep = ((amount / totalAmount) * 360f).toFloat()
+                                            if (touchAngle >= currentSweep && touchAngle <= currentSweep + sweep) {
+                                                selectedCategoryName = catName
+                                                break
+                                            }
+                                            currentSweep += sweep
+                                        }
+                                    }
+                                }
+                            }
+                    ) {
                         var startAngle = -90f
                         groupedData.forEach { (categoryName, amount) ->
                             val sweepAngle = ((amount / totalAmount) * 360f).toFloat()
-                            drawArc(
-                                color = categoryColors[categoryName] ?: Color.Gray,
-                                startAngle = startAngle,
-                                sweepAngle = sweepAngle,
-                                useCenter = true
-                            )
+                            val isSelected = (categoryName == selectedCategoryName)
+                            val color = categoryColors[categoryName] ?: Color.Gray
+
+                            if (isSelected) {
+                                val midAngleRad = Math.toRadians((startAngle + sweepAngle / 2f).toDouble())
+                                val offsetDistance = 10.dp.toPx()
+                                val dx = (cos(midAngleRad) * offsetDistance).toFloat()
+                                val dy = (sin(midAngleRad) * offsetDistance).toFloat()
+
+                                translate(left = dx, top = dy) {
+                                    drawArc(
+                                        color = color,
+                                        startAngle = startAngle,
+                                        sweepAngle = sweepAngle,
+                                        useCenter = true
+                                    )
+                                }
+                            } else {
+                                drawArc(
+                                    color = color,
+                                    startAngle = startAngle,
+                                    sweepAngle = sweepAngle,
+                                    useCenter = true
+                                )
+                            }
                             startAngle += sweepAngle
                         }
                     }
@@ -780,7 +841,7 @@ fun SinglePieChartCard(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = "₹${"%.0f".format(totalAmount)}",
+                                    text = totalAmount.toCurrencyString(),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -799,21 +860,94 @@ fun SinglePieChartCard(
                     groupedData.forEach { (categoryName, amount) ->
                         val percent = (amount / totalAmount * 100)
                         val color = categoryColors[categoryName] ?: Color.Gray
-                        
+                        val isSelected = (categoryName == selectedCategoryName)
+
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 8.dp)
+                            modifier = Modifier
+                                .clickable { selectedCategoryName = categoryName }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(12.dp)
+                                    .size(if (isSelected) 14.dp else 12.dp)
                                     .background(color, RoundedCornerShape(3.dp))
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "$categoryName: ₹${"%.0f".format(amount)} (${"%.1f".format(percent)}%)",
-                                style = MaterialTheme.typography.labelMedium
+                                text = "$categoryName: ${amount.toCurrencyString()} (${"%.1f".format(percent)}%)",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Normal,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
+                        }
+                    }
+                }
+
+                // Interactive Category Details Card
+                if (selectedCategoryName != null) {
+                    val selAmount = groupedData[selectedCategoryName] ?: 0.0
+                    val percent = if (totalAmount > 0) (selAmount / totalAmount * 100) else 0.0
+                    val selColor = categoryColors[selectedCategoryName] ?: Color.Gray
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = selColor.copy(alpha = 0.12f)),
+                        border = BorderStroke(1.5.dp, selColor.copy(alpha = 0.5f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .background(selColor, CircleShape)
+                                )
+                                Column {
+                                    Text(
+                                        text = selectedCategoryName ?: "",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Selected Category",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = selAmount.toCurrencyString(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = selColor.copy(alpha = 0.25f)
+                                ) {
+                                    Text(
+                                        text = "${"%.1f".format(percent)}%",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -857,7 +991,7 @@ fun MonthlyTableSlide(
             .fillMaxSize()
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item {
             Text(
@@ -867,87 +1001,193 @@ fun MonthlyTableSlide(
             )
         }
 
-        // Category Breakdown Table grouped by month
-        item {
+        // Calculation Breakdown Card & Table per Month
+        items(groupedByMonth.entries.toList(), key = { it.key }) { (yearMonth, monthExpenses) ->
+            val formattedMonth = yearMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+
+            val incomeExpenses = monthExpenses.filter { it.category.isIncome }
+            val expenseExpenses = monthExpenses.filter { !it.category.isIncome }
+
+            val totalIncome = incomeExpenses.sumOf { it.expense.amount }
+            val totalExpense = expenseExpenses.sumOf { it.expense.amount }
+            val netBalance = totalIncome - totalExpense
+
+            val incomeCategories = incomeExpenses.groupBy { it.category.name }
+                .mapValues { entry -> entry.value.sumOf { it.expense.amount } }
+                .toSortedMap()
+
+            val expenseCategories = expenseExpenses.groupBy { it.category.name }
+                .mapValues { entry -> entry.value.sumOf { it.expense.amount } }
+                .toSortedMap()
+
             Card(
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = CardDefaults.outlinedCardBorder()
             ) {
                 Column {
-                    // Header Row
+                    // Month Title Header
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text = formattedMonth,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(14.dp)
+                        )
+                    }
+
+                    // Calculation Breakdown Metrics (Income, Expense, Net Balance)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.primaryContainer)
-                            .padding(14.dp)
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        TableCell(text = "Month", weight = 1.1f, isHeader = true)
-                        TableCell(text = "Category", weight = 1.1f, isHeader = true)
-                        TableCell(text = "Total Cost", weight = 1.2f, isHeader = true, textAlign = TextAlign.End)
-                    }
-
-                    groupedByMonth.forEach { (yearMonth, monthExpenses) ->
-                        val formattedMonth = yearMonth.format(DateTimeFormatter.ofPattern("MMM yyyy"))
-
-                        val categoryMap = monthExpenses.groupBy { it.category.name }
-                            .mapValues { entry -> entry.value.sumOf { it.expense.amount } }
-                            .toSortedMap()
-
-                        val monthSubtotal = categoryMap.values.sum()
-
-                        categoryMap.entries.forEachIndexed { index, (catName, totalCost) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                        // Total Income
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFF10B981).copy(alpha = 0.12f),
+                            border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.3f))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                TableCell(
-                                    text = if (index == 0) formattedMonth else "",
-                                    weight = 1.1f,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                TableCell(text = catName, weight = 1.1f)
-                                TableCell(
-                                    text = "₹${String.format(Locale.getDefault(), "%,.2f", totalCost)}",
-                                    weight = 1.2f,
-                                    fontWeight = FontWeight.SemiBold,
-                                    textAlign = TextAlign.End
+                                Text("Total Income", style = MaterialTheme.typography.labelSmall, color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    totalIncome.toCurrencyString(),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF10B981)
                                 )
                             }
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 14.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                            )
                         }
 
-                        // Month Subtotal Row
+                        // Total Expenses
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFEF4444).copy(alpha = 0.12f),
+                            border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.3f))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("Total Expenses", style = MaterialTheme.typography.labelSmall, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    totalExpense.toCurrencyString(),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFFEF4444)
+                                )
+                            }
+                        }
+
+                        // Net Balance
+                        val netColor = if (netBalance >= 0) Color(0xFF10B981) else Color(0xFFEF4444)
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            color = netColor.copy(alpha = 0.12f),
+                            border = BorderStroke(1.dp, netColor.copy(alpha = 0.3f))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("Net Balance", style = MaterialTheme.typography.labelSmall, color = netColor, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    netBalance.toCurrencyString(),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = netColor
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                    // Explicit Category Table Header
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        TableCell(text = "Category", weight = 1.4f, isHeader = true)
+                        TableCell(text = "Type", weight = 0.8f, isHeader = true)
+                        TableCell(text = "Amount", weight = 1.2f, isHeader = true, textAlign = TextAlign.End)
+                    }
+
+                    // Income Categories
+                    incomeCategories.forEach { (catName, amount) ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f))
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                                .padding(horizontal = 14.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            TableCell(
-                                text = "$formattedMonth Total",
-                                weight = 2.2f,
-                                fontWeight = FontWeight.ExtraBold,
+                            TableCell(text = catName, weight = 1.4f, fontWeight = FontWeight.Medium)
+                            TableCell(text = "Income", weight = 0.8f, color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
+                            TableCell(text = amount.toCurrencyString(), weight = 1.2f, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End)
+                        }
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 14.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+                        )
+                    }
+
+                    // Expense Categories
+                    expenseCategories.forEach { (catName, amount) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TableCell(text = catName, weight = 1.4f, fontWeight = FontWeight.Medium)
+                            TableCell(text = "Expense", weight = 0.8f, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
+                            TableCell(text = amount.toCurrencyString(), weight = 1.2f, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End)
+                        }
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 14.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+                        )
+                    }
+
+                    // Calculation Subtotal Formula Row at Bottom
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "Monthly Calculation Subtotal",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
-                            TableCell(
-                                text = "₹${String.format(Locale.getDefault(), "%,.2f", monthSubtotal)}",
-                                weight = 1.2f,
-                                fontWeight = FontWeight.ExtraBold,
-                                textAlign = TextAlign.End,
+                            Text(
+                                text = "Formula: Income (${totalIncome.toCurrencyString()}) - Expenses (${totalExpense.toCurrencyString()}) = Net Balance (${netBalance.toCurrencyString()})",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         }
-
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
-                        )
                     }
                 }
             }
@@ -995,10 +1235,10 @@ fun MonthlyTableSlide(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 TableCell(text = formattedMonth, weight = 1.1f)
-                                TableCell(text = "₹${"%.0f".format(summary.totalIncome)}", weight = 1.1f, color = Color(0xFF10B981), textAlign = TextAlign.End)
-                                TableCell(text = "₹${"%.0f".format(summary.totalExpense)}", weight = 1.1f, color = Color(0xFFEF4444), textAlign = TextAlign.End)
+                                TableCell(text = summary.totalIncome.toCurrencyString(), weight = 1.1f, color = Color(0xFF10B981), textAlign = TextAlign.End)
+                                TableCell(text = summary.totalExpense.toCurrencyString(), weight = 1.1f, color = Color(0xFFEF4444), textAlign = TextAlign.End)
                                 TableCell(
-                                    text = "₹${"%.0f".format(summary.netBalance)}",
+                                    text = summary.netBalance.toCurrencyString(),
                                     weight = 1.2f,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.End,
@@ -1023,10 +1263,10 @@ fun MonthlyTableSlide(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             TableCell(text = "TOTAL", weight = 1.1f, fontWeight = FontWeight.ExtraBold)
-                            TableCell(text = "₹${"%.0f".format(grandTotalIncome)}", weight = 1.1f, color = Color(0xFF10B981), fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
-                            TableCell(text = "₹${"%.0f".format(grandTotalExpense)}", weight = 1.1f, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
+                            TableCell(text = grandTotalIncome.toCurrencyString(), weight = 1.1f, color = Color(0xFF10B981), fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
+                            TableCell(text = grandTotalExpense.toCurrencyString(), weight = 1.1f, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
                             TableCell(
-                                text = "₹${"%.0f".format(grandNetBalance)}",
+                                text = grandNetBalance.toCurrencyString(),
                                 weight = 1.2f,
                                 fontWeight = FontWeight.ExtraBold,
                                 textAlign = TextAlign.End,
@@ -1126,16 +1366,14 @@ fun YearlyChartsSlide(
             }
         }
 
-        // 2. Yearly Category Breakdown Table
+        // 2. Yearly Financial Breakdown (Calculation Breakdown Cards per Year)
         item {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
-                    text = "Yearly Category Breakdown Table",
+                    text = "Yearly Financial Breakdown",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
 
                 if (groupedByYear.isEmpty()) {
                     Card(
@@ -1150,83 +1388,191 @@ fun YearlyChartsSlide(
                         }
                     }
                 } else {
-                    Card(
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = CardDefaults.outlinedCardBorder()
-                    ) {
-                        Column {
-                            // Table Header
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.primaryContainer)
-                                    .padding(14.dp)
-                            ) {
-                                TableCell(text = "Year", weight = 1f, isHeader = true)
-                                TableCell(text = "Category", weight = 1.1f, isHeader = true)
-                                TableCell(text = "Total Cost", weight = 1.2f, isHeader = true, textAlign = TextAlign.End)
-                            }
+                    groupedByYear.forEach { (yearStr, yearExpenses) ->
+                        val incomeExpenses = yearExpenses.filter { it.category.isIncome }
+                        val expenseExpenses = yearExpenses.filter { !it.category.isIncome }
 
-                            groupedByYear.forEach { (yearStr, yearExpenses) ->
-                                val categoryMap = yearExpenses.groupBy { it.category.name }
-                                    .mapValues { entry -> entry.value.sumOf { it.expense.amount } }
-                                    .toSortedMap()
+                        val totalIncome = incomeExpenses.sumOf { it.expense.amount }
+                        val totalExpense = expenseExpenses.sumOf { it.expense.amount }
+                        val netBalance = totalIncome - totalExpense
 
-                                val yearSubtotal = categoryMap.values.sum()
+                        val incomeCategories = incomeExpenses.groupBy { it.category.name }
+                            .mapValues { entry -> entry.value.sumOf { it.expense.amount } }
+                            .toSortedMap()
 
-                                categoryMap.entries.forEachIndexed { index, (catName, totalCost) ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        TableCell(
-                                            text = if (index == 0) yearStr else "",
-                                            weight = 1f,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        TableCell(text = catName, weight = 1.1f)
-                                        TableCell(
-                                            text = "₹${String.format(Locale.getDefault(), "%,.2f", totalCost)}",
-                                            weight = 1.2f,
-                                            fontWeight = FontWeight.SemiBold,
-                                            textAlign = TextAlign.End
-                                        )
-                                    }
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 14.dp),
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                        val expenseCategories = expenseExpenses.groupBy { it.category.name }
+                            .mapValues { entry -> entry.value.sumOf { it.expense.amount } }
+                            .toSortedMap()
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = CardDefaults.outlinedCardBorder()
+                        ) {
+                            Column {
+                                // Year Title Header
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.primaryContainer
+                                ) {
+                                    Text(
+                                        text = "Year $yearStr",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(14.dp)
                                     )
                                 }
 
-                                // Year Subtotal Row
+                                // Top Metric Chips for Year (Total Income, Total Expenses, Net Balance)
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f))
-                                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .padding(12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    TableCell(
-                                        text = "$yearStr Total",
-                                        weight = 2.1f,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                                    )
-                                    TableCell(
-                                        text = "₹${String.format(Locale.getDefault(), "%,.2f", yearSubtotal)}",
-                                        weight = 1.2f,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        textAlign = TextAlign.End,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    // Total Income
+                                    Surface(
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = Color(0xFF10B981).copy(alpha = 0.12f),
+                                        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.3f))
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(10.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text("Total Income", style = MaterialTheme.typography.labelSmall, color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                totalIncome.toCurrencyString(),
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color(0xFF10B981)
+                                            )
+                                        }
+                                    }
+
+                                    // Total Expenses
+                                    Surface(
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = Color(0xFFEF4444).copy(alpha = 0.12f),
+                                        border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.3f))
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(10.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text("Total Expenses", style = MaterialTheme.typography.labelSmall, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                totalExpense.toCurrencyString(),
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color(0xFFEF4444)
+                                            )
+                                        }
+                                    }
+
+                                    // Net Balance
+                                    val netColor = if (netBalance >= 0) Color(0xFF10B981) else Color(0xFFEF4444)
+                                    Surface(
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = netColor.copy(alpha = 0.12f),
+                                        border = BorderStroke(1.dp, netColor.copy(alpha = 0.3f))
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(10.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text("Net Balance", style = MaterialTheme.typography.labelSmall, color = netColor, fontWeight = FontWeight.Bold)
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                netBalance.toCurrencyString(),
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = netColor
+                                            )
+                                        }
+                                    }
+                                }
+
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                                // Explicit Category Table Header
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                                ) {
+                                    TableCell(text = "Category", weight = 1.4f, isHeader = true)
+                                    TableCell(text = "Type", weight = 0.8f, isHeader = true)
+                                    TableCell(text = "Amount", weight = 1.2f, isHeader = true, textAlign = TextAlign.End)
+                                }
+
+                                // Explicit Income Categories
+                                incomeCategories.forEach { (catName, amount) ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        TableCell(text = catName, weight = 1.4f, fontWeight = FontWeight.Medium)
+                                        TableCell(text = "Income", weight = 0.8f, color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
+                                        TableCell(text = amount.toCurrencyString(), weight = 1.2f, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End)
+                                    }
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 14.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
                                     )
                                 }
 
-                                HorizontalDivider(
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
-                                )
+                                // Explicit Expense Categories
+                                expenseCategories.forEach { (catName, amount) ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        TableCell(text = catName, weight = 1.4f, fontWeight = FontWeight.Medium)
+                                        TableCell(text = "Expense", weight = 0.8f, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
+                                        TableCell(text = amount.toCurrencyString(), weight = 1.2f, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End)
+                                    }
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 14.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+                                    )
+                                }
+
+                                // Calculation Subtotal Formula Row at Bottom
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(14.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Text(
+                                            text = "Yearly Calculation Subtotal",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                        Text(
+                                            text = "Formula: Income (${totalIncome.toCurrencyString()}) - Expenses (${totalExpense.toCurrencyString()}) = Net Balance (${netBalance.toCurrencyString()})",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -1284,10 +1630,10 @@ fun YearlyChartsSlide(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     TableCell(text = summary.year, weight = 1f, fontWeight = FontWeight.Bold)
-                                    TableCell(text = "₹${"%.0f".format(summary.totalIncome)}", weight = 1.2f, color = Color(0xFF10B981), textAlign = TextAlign.End)
-                                    TableCell(text = "₹${"%.0f".format(summary.totalExpense)}", weight = 1.2f, color = Color(0xFFEF4444), textAlign = TextAlign.End)
+                                    TableCell(text = summary.totalIncome.toCurrencyString(), weight = 1.2f, color = Color(0xFF10B981), textAlign = TextAlign.End)
+                                    TableCell(text = summary.totalExpense.toCurrencyString(), weight = 1.2f, color = Color(0xFFEF4444), textAlign = TextAlign.End)
                                     TableCell(
-                                        text = "₹${"%.0f".format(summary.netBalance)}",
+                                        text = summary.netBalance.toCurrencyString(),
                                         weight = 1.2f,
                                         fontWeight = FontWeight.Bold,
                                         textAlign = TextAlign.End,
@@ -1312,10 +1658,10 @@ fun YearlyChartsSlide(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 TableCell(text = "GRAND TOTAL", weight = 1f, fontWeight = FontWeight.ExtraBold)
-                                TableCell(text = "₹${"%.0f".format(grandIncome)}", weight = 1.2f, color = Color(0xFF10B981), fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
-                                TableCell(text = "₹${"%.0f".format(grandExpense)}", weight = 1.2f, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
+                                TableCell(text = grandIncome.toCurrencyString(), weight = 1.2f, color = Color(0xFF10B981), fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
+                                TableCell(text = grandExpense.toCurrencyString(), weight = 1.2f, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
                                 TableCell(
-                                    text = "₹${"%.0f".format(grandNet)}",
+                                    text = grandNet.toCurrencyString(),
                                     weight = 1.2f,
                                     fontWeight = FontWeight.ExtraBold,
                                     textAlign = TextAlign.End,
@@ -1377,17 +1723,17 @@ fun SelectChildTableDialogForDetail(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "Select Expense Sheet to Add Expense",
+                "Select Expense Table to Add Expense",
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleMedium
             )
         },
         text = {
             if (childLekkas.isEmpty()) {
-                Text("No expense sheets found. Please create an expense sheet first.")
+                Text("No expense tables found. Please create an expense table first.")
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Choose which expense sheet/event this expense belongs to:")
+                    Text("Choose which expense table/event this expense belongs to:")
                     childLekkas.forEach { child ->
                         Card(
                             modifier = Modifier

@@ -71,7 +71,7 @@ class ExpenseViewModel(
         )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val mostRecentSheet: StateFlow<Lekka?> = combine(allLekkas, repository.getAllExpensesWithCategoryAndLekka()) { lekkas, allExpenses ->
+    val mostRecentTable: StateFlow<Lekka?> = combine(allLekkas, repository.getAllExpensesWithCategoryAndLekka()) { lekkas, allExpenses ->
         val childLekkas = lekkas.filter { !it.isMotherTable }
         if (childLekkas.isEmpty()) return@combine null
 
@@ -231,6 +231,7 @@ class ExpenseViewModel(
 
     init {
         viewModelScope.launch(ioDispatcher) {
+            repository.updateMotherTableName()
             allLekkas.collect { lekkas ->
                 if (lekkas.isEmpty()) {
                     repository.populateDatabase()

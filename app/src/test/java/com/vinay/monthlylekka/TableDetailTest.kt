@@ -62,6 +62,13 @@ class TableDetailTest {
     }
 
     @Test
+    fun route_help_instantiatesCorrectly() {
+        val route: Route = Route.Help
+        assert(route is Route.Help)
+        assertEquals(Route.Help, route)
+    }
+
+    @Test
     fun categoryBreakdown_groupsMonthlyAndYearlyExpensesCorrectly() {
         val cat1 = com.vinay.monthlylekka.data.Category(id = 1, lekkaId = 1, name = "Kirani", colorHex = "#FFB300", isIncome = false)
         val cat2 = com.vinay.monthlylekka.data.Category(id = 2, lekkaId = 1, name = "Food", colorHex = "#E53935", isIncome = false)

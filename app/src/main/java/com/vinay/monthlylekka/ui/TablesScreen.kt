@@ -60,7 +60,7 @@ fun TablesScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "All Expense Sheets",
+                        text = "All Expense Tables",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 },
@@ -84,7 +84,7 @@ fun TablesScreen(
                     ) {
                         Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Create Expense Sheet", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                        Text("Create Expense Table", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             )
@@ -99,7 +99,7 @@ fun TablesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Section 1: Master Expense Sheet
+            // Section 1: Master Expense Table
             if (masterLekkaWithSummary != null) {
                 item {
                     Column(
@@ -109,7 +109,7 @@ fun TablesScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "MASTER EXPENSE SHEET (AGGREGATED)",
+                            text = "MASTER EXPENSE TABLE (AGGREGATED)",
                             style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.2.sp),
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
@@ -124,7 +124,7 @@ fun TablesScreen(
                 }
             }
 
-            // Section 2: Expense Sheets / Events
+            // Section 2: Expense Tables & Events
             item {
                 Row(
                     modifier = Modifier
@@ -134,13 +134,13 @@ fun TablesScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Expense Sheets / Events",
+                        text = "Expense Tables & Events",
                         style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.2.sp),
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${childLekkas.size} Expense Sheets",
+                        text = "${childLekkas.size} Expense Tables",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -162,7 +162,7 @@ fun TablesScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "No expense sheets created yet. Click '+ Create Expense Sheet' to add one!",
+                                "No expense tables created yet. Click '+ Create Expense Table' to add one!",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -192,7 +192,7 @@ fun TablesScreen(
 
     if (showCreateDialog) {
         LekkaDialog(
-            title = "Create Expense Sheet",
+            title = "Create Expense Table",
             onDismiss = { showCreateDialog = false },
             onConfirm = { name: String, isDefault: Boolean, categories: List<CategorySpec> ->
                 onCreateLekka(name, null, null, isDefault, categories)
@@ -203,7 +203,7 @@ fun TablesScreen(
 
     if (lekkaToEdit != null) {
         LekkaDialog(
-            title = "Edit Expense Sheet",
+            title = "Edit Expense Table",
             initialLekka = lekkaToEdit,
             onDismiss = { lekkaToEdit = null },
             onConfirm = { name: String, isDefault: Boolean, categories: List<CategorySpec> ->
@@ -218,7 +218,7 @@ fun TablesScreen(
     if (showDeleteConfirm != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
-            title = { Text("Delete Expense Sheet") },
+            title = { Text("Delete Expense Table") },
             text = { Text("Are you sure you want to delete '${showDeleteConfirm?.name}'? All associated transactions and categories will be permanently deleted.") },
             confirmButton = {
                 TextButton(
@@ -275,7 +275,7 @@ fun MasterTableOverviewCard(
                             color = Color(0xFFF59E0B)
                         ) {
                             Text(
-                                text = "👑 MASTER EXPENSE SHEET",
+                                text = "👑 MASTER EXPENSE TABLE",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                 color = Color.White,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -323,7 +323,7 @@ fun MasterTableOverviewCard(
                             color = Color.White.copy(alpha = 0.8f)
                         )
                         Text(
-                            text = "₹${String.format(Locale.getDefault(), "%,.2f", summary.balance)}",
+                            text = summary.balance.toCurrencyString(),
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
                             color = Color.White
                         )
@@ -337,7 +337,7 @@ fun MasterTableOverviewCard(
                                 color = Color.White.copy(alpha = 0.8f)
                             )
                             Text(
-                                text = "₹${String.format(Locale.getDefault(), "%,.2f", summary.totalIncome)}",
+                                text = summary.totalIncome.toCurrencyString(),
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                                 color = Color(0xFFA7F3D0)
                             )
@@ -349,7 +349,7 @@ fun MasterTableOverviewCard(
                                 color = Color.White.copy(alpha = 0.8f)
                             )
                             Text(
-                                text = "₹${String.format(Locale.getDefault(), "%,.2f", summary.totalExpense)}",
+                                text = summary.totalExpense.toCurrencyString(),
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                                 color = Color(0xFFFECACA)
                             )
@@ -416,7 +416,7 @@ fun ChildTableCard(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "Net Balance: ₹${String.format(Locale.getDefault(), "%,.2f", balance)}",
+                    text = "Net Balance: ${balance.toCurrencyString()}",
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = if (balance >= 0) Color(0xFF10B981) else Color(0xFFEF4444)
                 )
@@ -426,21 +426,21 @@ fun ChildTableCard(
                 IconButton(onClick = onSetDefault) {
                     Icon(
                         imageVector = if (lekka.isDefault) Icons.Rounded.Star else Icons.Rounded.StarBorder,
-                        contentDescription = if (lekka.isDefault) "Default Expense Sheet" else "Set as Default",
+                        contentDescription = if (lekka.isDefault) "Default Expense Table" else "Set as Default",
                         tint = if (lekka.isDefault) Color(0xFFEAB308) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 IconButton(onClick = onEdit) {
                     Icon(
                         imageVector = Icons.Rounded.Edit,
-                        contentDescription = "Edit Expense Sheet",
+                        contentDescription = "Edit Expense Table",
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
                 IconButton(onClick = onDelete) {
                     Icon(
                         imageVector = Icons.Rounded.Delete,
-                        contentDescription = "Delete Expense Sheet",
+                        contentDescription = "Delete Expense Table",
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -454,7 +454,7 @@ fun ChildTableCard(
 fun TablesScreenPreview() {
     val sampleLekkas = listOf(
         LekkaWithSummary(
-            Lekka(1, "Master Expense Sheet", isDefault = true, isMotherTable = true),
+            Lekka(1, "Master Expense Table", isDefault = true, isMotherTable = true),
             LekkaSummary(1, 70000.0, 23500.0)
         ),
         LekkaWithSummary(

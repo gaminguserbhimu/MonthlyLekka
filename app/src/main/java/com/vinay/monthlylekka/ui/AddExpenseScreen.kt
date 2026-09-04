@@ -187,7 +187,7 @@ fun AddExpenseScreen(
                 value = amount,
                 onValueChange = { if (it.all { char -> char.isDigit() || char == '.' }) amount = it },
                 label = { Text("Amount") },
-                placeholder = { Text("0.00") },
+                placeholder = { Text("0") },
                 prefix = { Text("₹ ", style = MaterialTheme.typography.headlineSmall) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -304,10 +304,10 @@ fun AddExpenseScreen(
                 }
             }
 
-            // Expense Sheet / Table Selection
+            // Expense Table Selection
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Expense Sheet / Table",
+                    text = "Expense Table",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
@@ -318,7 +318,7 @@ fun AddExpenseScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
-                        value = selectedLekka?.name ?: "Select Expense Sheet",
+                        value = selectedLekka?.name ?: "Select Expense Table",
                         onValueChange = {},
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tableDropdownExpanded) },

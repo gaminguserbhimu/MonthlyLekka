@@ -5,7 +5,22 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CategoryDao {
-    @Query("SELECT * FROM categories WHERE lekkaId = :lekkaId ORDER BY isIncome DESC, name ASC")
+    @Query("""
+        SELECT c.* FROM categories c
+        LEFT JOIN expenses e ON c.id = e.categoryId
+        WHERE c.lekkaId = :lekkaId
+        GROUP BY c.id
+        ORDER BY c.isIncome DESC, COUNT(e.id) DESC, c.name ASC
+    """)
+    fun getCategoriesByLekka(lekkaId: Long): Flow<List<Category>>
+
+    @Query("""
+        SELECT c.* FROM categories c
+        LEFT JOIN expenses e ON c.id = e.categoryId
+        WHERE c.lekkaId = :lekkaId
+        GROUP BY c.id
+        ORDER BY c.isIncome DESC, COUNT(e.id) DESC, c.name ASC
+    """)
     fun getAllCategories(lekkaId: Long): Flow<List<Category>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

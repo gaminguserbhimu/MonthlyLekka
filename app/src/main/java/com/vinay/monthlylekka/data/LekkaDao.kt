@@ -32,6 +32,9 @@ interface LekkaDao {
     @Query("SELECT * FROM lekkas WHERE isMotherTable = 1 LIMIT 1")
     suspend fun getMotherTable(): Lekka?
 
+    @Query("UPDATE lekkas SET name = 'Master Expense Table' WHERE isMotherTable = 1")
+    suspend fun updateMotherTableName()
+
     @Query("SELECT * FROM lekkas WHERE isMotherTable = 0")
     fun getChildLekkas(): Flow<List<Lekka>>
 

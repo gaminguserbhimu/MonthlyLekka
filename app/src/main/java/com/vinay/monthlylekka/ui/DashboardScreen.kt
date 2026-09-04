@@ -136,7 +136,7 @@ fun DashboardScreen(
                                         color = MaterialTheme.colorScheme.primaryContainer
                                     ) {
                                         Text(
-                                            text = "MASTER EXPENSE SHEET",
+                                            text = "MASTER EXPENSE TABLE",
                                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
                                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -155,7 +155,7 @@ fun DashboardScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = onSwitchLekka) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Switch Expense Sheet")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Switch Expense Table")
                         }
                     },
                     actions = {
@@ -297,7 +297,7 @@ fun BalanceCard(netBalance: Double, income: Double, expense: Double) {
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                 )
                 Text(
-                    text = "₹${String.format(Locale.getDefault(), "%,.2f", netBalance)}",
+                    text = netBalance.toCurrencyString(),
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = if (netBalance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
@@ -316,7 +316,7 @@ fun SummaryItem(label: String, amount: Double, color: Color) {
             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
         )
         Text(
-            text = "₹${String.format(Locale.getDefault(), "%,.2f", amount)}",
+            text = amount.toCurrencyString(),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = color
@@ -507,7 +507,7 @@ fun ExpenseListItem(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Text(
-                    text = "${if (category.isIncome) "+" else "-"} ₹${String.format(Locale.getDefault(), "%,.2f", expense.amount)}",
+                    text = "${if (category.isIncome) "+" else "-"} ${expense.amount.toCurrencyString()}",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                     color = if (category.isIncome) Color(0xFF2E7D32) else Color(0xFFD32F2F),
                     textAlign = TextAlign.End
@@ -525,21 +525,21 @@ fun SelectChildTableDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Expense Sheet", fontWeight = FontWeight.Bold) },
+        title = { Text("Select Expense Table", fontWeight = FontWeight.Bold) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    "Direct entry into Master Expense Sheet is read-only. Please select an Expense Sheet to record this transaction:",
+                    "Direct entry into Master Expense Table is read-only. Please select an Expense Table to record this transaction:",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 if (childLekkas.isEmpty()) {
                     Text(
-                        "No Expense Sheets available. Please create an Expense Sheet first.",
+                        "No Expense Tables available. Please create an Expense Table first.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )

@@ -25,7 +25,7 @@ abstract class AppDatabase : RoomDatabase() {
     }
 
     suspend fun populateDatabase() {
-        val masterLekkaId = lekkaDao().insertLekka(Lekka(name = "Master Expense Sheet", isMotherTable = true, isDefault = false))
+        val masterLekkaId = lekkaDao().insertLekka(Lekka(name = "Master Expense Table", isMotherTable = true, isDefault = false))
         val defaultChildLekkaId = lekkaDao().insertLekka(Lekka(name = "Monthly Expenses", isMotherTable = false, isDefault = true))
 
         val categories = listOf(
@@ -82,9 +82,10 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE `lekkas` ADD COLUMN `isMotherTable` INTEGER NOT NULL DEFAULT 0")
                 database.execSQL("""
                     INSERT OR IGNORE INTO `lekkas` (`name`, `startDate`, `endDate`, `isDefault`, `isMotherTable`) 
-                    VALUES ('Master Expense Sheet', NULL, NULL, 0, 1)
+                    VALUES ('Master Expense Table', NULL, NULL, 0, 1)
                 """)
                 database.execSQL("UPDATE `lekkas` SET `isDefault` = CASE WHEN `isMotherTable` = 0 AND `id` = (SELECT `id` FROM `lekkas` WHERE `isMotherTable` = 0 ORDER BY `id` ASC LIMIT 1) THEN 1 ELSE 0 END")
+                database.execSQL("UPDATE `lekkas` SET `name` = 'Master Expense Table' WHERE `isMotherTable` = 1")
             }
         }
 

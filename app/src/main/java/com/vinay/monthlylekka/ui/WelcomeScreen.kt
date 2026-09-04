@@ -1,25 +1,31 @@
 package com.vinay.monthlylekka.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.List
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.TrendingDown
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.TableChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,21 +40,22 @@ import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.LekkaWithSummary
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WelcomeScreen(
     lekkas: List<LekkaWithSummary>,
     selectedLekkaId: Long?,
-    mostRecentSheet: Lekka? = null,
+    mostRecentTable: Lekka? = null,
     onLekkaSelected: (Long) -> Unit,
     onQuickAddClick: (Long) -> Unit,
-    onSeeQuickNotesClick: (Long) -> Unit,
+    onSeeQuickNotesClick: (Long) -> Unit = {},
     onManageAllTablesClick: () -> Unit,
     modifier: Modifier = Modifier,
     motherTableSummary: LekkaSummary? = null,
-    recentExpenses: List<ExpenseWithCategoryAndLekka> = emptyList()
+    recentExpenses: List<ExpenseWithCategoryAndLekka> = emptyList(),
+    onTableClick: (Long) -> Unit = onSeeQuickNotesClick,
+    onHelpClick: () -> Unit = {}
 ) {
     var showSelectChildDialogForQuickAdd by remember { mutableStateOf(false) }
     var dropdownExpanded by remember { mutableStateOf(false) }
@@ -65,21 +72,12 @@ fun WelcomeScreen(
         ?: masterLekkaWithSummary?.summary 
         ?: LekkaSummary(0, 0.0, 0.0)
 
-    // Most Recently Updated Sheet Computation
-    val targetMostRecentWithSummary = lekkas.find { it.lekka.id == mostRecentSheet?.id }
+    // Most Recently Updated Table Computation
+    val targetMostRecentWithSummary = lekkas.find { it.lekka.id == mostRecentTable?.id }
         ?: childLekkas.find { it.lekka.isDefault }
         ?: childLekkas.firstOrNull()
-    val targetMostRecentSheet = targetMostRecentWithSummary?.lekka
+    val targetMostRecentTable = targetMostRecentWithSummary?.lekka
     val targetMostRecentSummary = targetMostRecentWithSummary?.summary
-
-    // 2 Recent Transactions for Most Recently Updated Sheet
-    val mostRecent2Expenses = remember(recentExpenses, targetMostRecentSheet) {
-        if (targetMostRecentSheet != null) {
-            recentExpenses.filter { it.expense.lekkaId == targetMostRecentSheet.id }.take(2)
-        } else {
-            emptyList()
-        }
-    }
 
     LaunchedEffect(lekkas, selectedLekkaId) {
         if (lekkas.isNotEmpty() && (selectedLekkaId == null || lekkas.none { it.lekka.id == selectedLekkaId })) {
@@ -90,302 +88,301 @@ fun WelcomeScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.AccountBalanceWallet,
+                                    contentDescription = "Monthly Expenses Logo",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Monthly Expenses",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Smart Personal & Event Expense Manager",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onHelpClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.HelpOutline,
+                            contentDescription = "Help & Guide",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        }
     ) { innerPadding ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = if (isLargeScreen) 32.dp else 16.dp),
-            contentPadding = PaddingValues(vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+                .padding(horizontal = if (isLargeScreen) 24.dp else 16.dp, vertical = 8.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 1. Branded Header
-            item {
-                BrandedHeader(isLargeScreen = isLargeScreen)
+            // 2. Master Summary Card (Master Expense Table)
+            val masterLekkaId = masterLekkaWithSummary?.lekka?.id
+            OverallFinancialSummaryCard(
+                summary = aggregatedSummary,
+                onClick = {
+                    masterLekkaId?.let { id ->
+                        onLekkaSelected(id)
+                        onTableClick(id)
+                    }
+                }
+            )
+
+            // 3. Most Recently Updated Expense Table Card (NO transaction rows)
+            if (targetMostRecentTable != null) {
+                MostRecentlyUpdatedExpenseTableCard(
+                    table = targetMostRecentTable,
+                    summary = targetMostRecentSummary,
+                    isActive = (targetMostRecentTable.id == activeId),
+                    onOpenTable = {
+                        onLekkaSelected(targetMostRecentTable.id)
+                        onTableClick(targetMostRecentTable.id)
+                    }
+                )
             }
 
-            // 2. Master Summary Card (Overall Financial Summary)
-            item {
-                OverallFinancialSummaryCard(summary = aggregatedSummary)
-            }
-
-            // 3. Most Recently Updated Expense Sheet Card
-            if (targetMostRecentSheet != null) {
-                item {
-                    MostRecentlyUpdatedExpenseSheetCard(
-                        sheet = targetMostRecentSheet,
-                        summary = targetMostRecentSummary,
-                        recentTransactions = mostRecent2Expenses,
-                        onOpenSheet = {
-                            onLekkaSelected(targetMostRecentSheet.id)
-                            onSeeQuickNotesClick(targetMostRecentSheet.id)
-                        }
+            // 4. Active Expense Table Selector Dropdown
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 700.dp)
+            ) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { dropdownExpanded = true },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    ),
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = SolidColor(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                     )
-                }
-            }
-
-            // 4. Active Expense Sheet Selector Dropdown
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = 700.dp)
-                ) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { dropdownExpanded = true },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                        ),
-                        border = CardDefaults.outlinedCardBorder().copy(
-                            brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = "Active Expense Sheet: ",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = activeLekkaWithSummary?.lekka?.name ?: "Select Expense Sheet",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                if (activeLekkaWithSummary?.lekka?.isMotherTable == true) {
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = MaterialTheme.colorScheme.primaryContainer
-                                    ) {
-                                        Text(
-                                            text = "👑 MASTER EXPENSE SHEET",
-                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                } else if (activeLekkaWithSummary?.lekka?.isDefault == true) {
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = Color(0xFF10B981)
-                                    ) {
-                                        Text(
-                                            text = "★ DEFAULT",
-                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                                            color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                }
-                            }
-
-                            Icon(
-                                imageVector = Icons.Rounded.ArrowDropDown,
-                                contentDescription = "Active Expense Sheet Selector Dropdown",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-
-                    DropdownMenu(
-                        expanded = dropdownExpanded,
-                        onDismissRequest = { dropdownExpanded = false },
-                        modifier = Modifier.widthIn(min = 260.dp)
-                    ) {
-                        lekkas.forEach { item ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Text(
-                                            text = item.lekka.name,
-                                            fontWeight = if (item.lekka.id == activeId) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                        if (item.lekka.isMotherTable) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = MaterialTheme.colorScheme.primaryContainer
-                                            ) {
-                                                Text(
-                                                    text = "👑 MASTER",
-                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
-                                            }
-                                        } else if (item.lekka.isDefault) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = Color(0xFF10B981)
-                                            ) {
-                                                Text(
-                                                    text = "★ DEFAULT",
-                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                                                    color = Color.White,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    dropdownExpanded = false
-                                    onLekkaSelected(item.lekka.id)
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 5. Active Expense Sheet Recent Records Preview
-            item {
-                val active2RecentExpenses = remember(recentExpenses, activeId) {
-                    if (activeLekkaWithSummary?.lekka?.isMotherTable == true) {
-                        recentExpenses.take(2)
-                    } else {
-                        recentExpenses.filter { it.expense.lekkaId == activeId }.take(2)
-                    }
-                }
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = 700.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(
-                        text = "RECENT RECORDS PREVIEW",
-                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.2.sp),
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    if (active2RecentExpenses.isEmpty()) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                            )
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(20.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "No recent records found for this active expense sheet.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    } else {
-                        active2RecentExpenses.forEach { item ->
-                            RecentTransactionPreviewRow(
-                                item = item,
-                                isMotherTable = activeLekkaWithSummary?.lekka?.isMotherTable == true
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 6. Primary Action Buttons
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = 700.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                if (activeLekkaWithSummary?.lekka?.isMotherTable == true) {
-                                    showSelectChildDialogForQuickAdd = true
-                                } else {
-                                    activeId?.let { onQuickAddClick(it) }
-                                }
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        ) {
-                            Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Quick Add", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                        }
-
-                        FilledTonalButton(
-                            onClick = {
-                                activeId?.let { onSeeQuickNotesClick(it) }
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Icon(Icons.AutoMirrored.Rounded.List, contentDescription = null, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("View Details", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                        }
-                    }
-
-                    OutlinedButton(
-                        onClick = onManageAllTablesClick,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        border = androidx.compose.foundation.BorderStroke(
-                            width = 1.5.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "Active Expense Table: ",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = activeLekkaWithSummary?.lekka?.name ?: "Select Expense Table",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (activeLekkaWithSummary?.lekka?.isMotherTable == true) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer
+                                ) {
+                                    Text(
+                                        text = "👑 MASTER",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            } else if (activeLekkaWithSummary?.lekka?.isDefault == true) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFF10B981)
+                                ) {
+                                    Text(
+                                        text = "★ DEFAULT",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+
                         Icon(
-                            imageVector = Icons.Rounded.GridView,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
+                            imageVector = Icons.Rounded.ArrowDropDown,
+                            contentDescription = "Active Expense Table Selector Dropdown",
                             tint = MaterialTheme.colorScheme.primary
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Manage All Expense Sheets",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary
+                    }
+                }
+
+                DropdownMenu(
+                    expanded = dropdownExpanded,
+                    onDismissRequest = { dropdownExpanded = false },
+                    modifier = Modifier.widthIn(min = 260.dp)
+                ) {
+                    lekkas.forEach { item ->
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = item.lekka.name,
+                                        fontWeight = if (item.lekka.id == activeId) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                    if (item.lekka.isMotherTable) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer
+                                        ) {
+                                            Text(
+                                                text = "👑 MASTER",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    } else if (item.lekka.isDefault) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFF10B981)
+                                        ) {
+                                            Text(
+                                                text = "★ DEFAULT",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            },
+                            onClick = {
+                                dropdownExpanded = false
+                                onLekkaSelected(item.lekka.id)
+                            }
                         )
                     }
+                }
+            }
+
+            // 5. Recent Tables Section
+            val recentChildLekkas = childLekkas.take(2)
+            if (recentChildLekkas.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 700.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Recent Tables",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+
+                    recentChildLekkas.forEach { item ->
+                        RecentTableCard(
+                            lekkaWithSummary = item,
+                            onClick = {
+                                onLekkaSelected(item.lekka.id)
+                                onTableClick(item.lekka.id)
+                            }
+                        )
+                    }
+                }
+            }
+
+            // 6. Primary Action Buttons ("Quick Add", "All Tables")
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 700.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = {
+                        if (activeLekkaWithSummary?.lekka?.isMotherTable == true) {
+                            showSelectChildDialogForQuickAdd = true
+                        } else {
+                            activeId?.let { onQuickAddClick(it) }
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Quick Add", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                }
+
+                OutlinedButton(
+                    onClick = onManageAllTablesClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(
+                        width = 1.5.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.TableChart,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        "All Tables",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
@@ -404,38 +401,132 @@ fun WelcomeScreen(
 }
 
 @Composable
+fun RecentTableCard(
+    lekkaWithSummary: LekkaWithSummary,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val table = lekkaWithSummary.lekka
+    val balance = lekkaWithSummary.summary?.balance ?: 0.0
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = SolidColor(MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = table.name,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (table.isDefault) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFF10B981)
+                        ) {
+                            Text(
+                                text = "DEFAULT",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Net Balance: ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = balance.toCurrencyString(),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
+                        color = if (balance >= 0) Color(0xFF10B981) else Color(0xFFEF4444)
+                    )
+                }
+            }
+
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                modifier = Modifier.size(32.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                        contentDescription = "Open Table",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun BrandedHeader(isLargeScreen: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .widthIn(max = 700.dp)
-            .padding(top = 8.dp, bottom = 4.dp),
+            .padding(top = 4.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
         Surface(
             shape = RoundedCornerShape(18.dp),
             color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(if (isLargeScreen) 64.dp else 52.dp)
+            modifier = Modifier.size(if (isLargeScreen) 56.dp else 48.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Rounded.AccountBalanceWallet,
                     contentDescription = "Monthly Expenses Logo",
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(if (isLargeScreen) 36.dp else 28.dp)
+                    modifier = Modifier.size(if (isLargeScreen) 32.dp else 26.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
         Column {
             Text(
                 text = "Monthly Expenses",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = if (isLargeScreen) 32.sp else 24.sp
+                    fontSize = if (isLargeScreen) 28.sp else 22.sp
                 ),
                 color = MaterialTheme.colorScheme.primary
             )
@@ -449,13 +540,19 @@ fun BrandedHeader(isLargeScreen: Boolean) {
 }
 
 @Composable
-fun OverallFinancialSummaryCard(summary: LekkaSummary) {
+fun OverallFinancialSummaryCard(
+    summary: LekkaSummary,
+    onClick: (() -> Unit)? = null
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .widthIn(max = 700.dp),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            .widthIn(max = 700.dp)
+            .then(
+                if (onClick != null) Modifier.clickable { onClick() } else Modifier
+            ),
+        shape = RoundedCornerShape(22.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(
             modifier = Modifier
@@ -465,15 +562,32 @@ fun OverallFinancialSummaryCard(summary: LekkaSummary) {
                         colors = listOf(Color(0xFF0F172A), Color(0xFF1E293B))
                     )
                 )
-                .padding(20.dp)
+                .padding(16.dp)
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(
-                    text = "OVERALL FINANCIAL SUMMARY (MASTER EXPENSE SHEET)",
-                    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.2.sp),
-                    color = Color(0xFF94A3B8),
-                    fontWeight = FontWeight.Bold
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Master Expense Table",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text = "👑 MASTER",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
 
                 Column {
                     Text(
@@ -482,10 +596,10 @@ fun OverallFinancialSummaryCard(summary: LekkaSummary) {
                         color = Color.White.copy(alpha = 0.8f)
                     )
                     Text(
-                        text = "₹${String.format(Locale.getDefault(), "%,.2f", summary.balance)}",
+                        text = summary.balance.toCurrencyString(),
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.ExtraBold,
-                            fontSize = 32.sp
+                            fontSize = 28.sp
                         ),
                         color = Color.White
                     )
@@ -493,29 +607,29 @@ fun OverallFinancialSummaryCard(summary: LekkaSummary) {
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     // Total Income Card
                     Surface(
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(14.dp),
                         color = Color.White.copy(alpha = 0.1f)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Surface(
                                 shape = CircleShape,
                                 color = Color(0xFF10B981),
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(28.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Rounded.TrendingUp,
                                         contentDescription = "Income",
                                         tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
                             }
@@ -527,7 +641,7 @@ fun OverallFinancialSummaryCard(summary: LekkaSummary) {
                                     color = Color.White.copy(alpha = 0.8f)
                                 )
                                 Text(
-                                    text = "₹${String.format(Locale.getDefault(), "%,.2f", summary.totalIncome)}",
+                                    text = summary.totalIncome.toCurrencyString(),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     color = Color.White,
                                     maxLines = 1,
@@ -540,24 +654,24 @@ fun OverallFinancialSummaryCard(summary: LekkaSummary) {
                     // Total Outcome/Expense Card
                     Surface(
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(14.dp),
                         color = Color.White.copy(alpha = 0.1f)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Surface(
                                 shape = CircleShape,
                                 color = Color(0xFFEF4444),
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(28.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Rounded.TrendingDown,
                                         contentDescription = "Outcome",
                                         tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
                             }
@@ -569,7 +683,7 @@ fun OverallFinancialSummaryCard(summary: LekkaSummary) {
                                     color = Color.White.copy(alpha = 0.8f)
                                 )
                                 Text(
-                                    text = "₹${String.format(Locale.getDefault(), "%,.2f", summary.totalExpense)}",
+                                    text = summary.totalExpense.toCurrencyString(),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     color = Color.White,
                                     maxLines = 1,
@@ -585,11 +699,11 @@ fun OverallFinancialSummaryCard(summary: LekkaSummary) {
 }
 
 @Composable
-fun MostRecentlyUpdatedExpenseSheetCard(
-    sheet: Lekka,
+fun MostRecentlyUpdatedExpenseTableCard(
+    table: Lekka,
     summary: LekkaSummary?,
-    recentTransactions: List<ExpenseWithCategoryAndLekka>,
-    onOpenSheet: () -> Unit
+    isActive: Boolean = false,
+    onOpenTable: () -> Unit
 ) {
     val balance = summary?.balance ?: 0.0
 
@@ -597,37 +711,56 @@ fun MostRecentlyUpdatedExpenseSheetCard(
         modifier = Modifier
             .fillMaxWidth()
             .widthIn(max = 700.dp)
-            .clickable { onOpenSheet() },
-        shape = RoundedCornerShape(20.dp),
+            .clickable { onOpenTable() },
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         border = CardDefaults.outlinedCardBorder().copy(
-            brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+            brush = SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(
-                        text = "⚡ MOST RECENTLY UPDATED EXPENSE SHEET",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text = "⚡ MOST RECENTLY UPDATED EXPENSE TABLE",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    if (isActive) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF10B981)
+                        ) {
+                            Text(
+                                text = "ACTIVE",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
                 }
 
                 Text(
@@ -637,9 +770,9 @@ fun MostRecentlyUpdatedExpenseSheetCard(
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = sheet.name,
+                    text = table.name,
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -661,151 +794,12 @@ fun MostRecentlyUpdatedExpenseSheetCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "₹${String.format(Locale.getDefault(), "%,.2f", balance)}",
+                        text = balance.toCurrencyString(),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                         color = if (balance >= 0) Color(0xFF10B981) else Color(0xFFEF4444)
                     )
                 }
             }
-
-            Text(
-                text = "RECENT TRANSACTIONS PREVIEW (2)",
-                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.1.sp),
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-
-            if (recentTransactions.isEmpty()) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Box(
-                        modifier = Modifier.padding(14.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No recent transactions in this sheet.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            } else {
-                recentTransactions.forEach { item ->
-                    RecentTransactionPreviewRow(
-                        item = item,
-                        isMotherTable = false
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun RecentTransactionPreviewRow(
-    item: ExpenseWithCategoryAndLekka,
-    isMotherTable: Boolean
-) {
-    val expense = item.expense
-    val category = item.category
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                // Date Badge
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    Text(
-                        text = expense.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
-                    )
-                }
-
-                // Category Avatar & Name Badge
-                CategoryIconAvatar(
-                    categoryName = category.name,
-                    colorHex = category.colorHex,
-                    isIncome = category.isIncome,
-                    size = 32.dp,
-                    iconSize = 18.dp
-                )
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
-                        ) {
-                            Text(
-                                text = category.name,
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-
-                        if (isMotherTable && item.lekkaName.isNotBlank()) {
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer
-                            ) {
-                                Text(
-                                    text = "[${item.lekkaName}]",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    Text(
-                        text = expense.description.ifBlank { "No description" },
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Text(
-                text = "${if (category.isIncome) "+" else "-"} ₹${String.format(Locale.getDefault(), "%,.2f", expense.amount)}",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                color = if (category.isIncome) Color(0xFF2E7D32) else Color(0xFFD32F2F)
-            )
         }
     }
 }
@@ -818,21 +812,21 @@ fun SelectChildTableDialogForWelcome(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Expense Sheet", fontWeight = FontWeight.Bold) },
+        title = { Text("Select Expense Table", fontWeight = FontWeight.Bold) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    "Direct entry into Master Expense Sheet is read-only. Please select an Expense Sheet to record this transaction:",
+                    "Direct entry into Master Expense Table is read-only. Please select an Expense Table to record this transaction:",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 if (childLekkas.isEmpty()) {
                     Text(
-                        "No Expense Sheets available. Please create an Expense Sheet first.",
+                        "No Expense Tables available. Please create an Expense Table first.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -894,7 +888,7 @@ fun SelectChildTableDialogForWelcome(
 fun WelcomeScreenPreview() {
     val sampleLekkas = listOf(
         LekkaWithSummary(
-            Lekka(1, "Master Expense Sheet", isDefault = true, isMotherTable = true),
+            Lekka(1, "Master Expense Table", isDefault = true, isMotherTable = true),
             LekkaSummary(1, 70000.0, 23500.0)
         ),
         LekkaWithSummary(
@@ -924,13 +918,14 @@ fun WelcomeScreenPreview() {
         WelcomeScreen(
             lekkas = sampleLekkas,
             selectedLekkaId = 1,
-            mostRecentSheet = sampleLekkas[1].lekka,
+            mostRecentTable = sampleLekkas[1].lekka,
             motherTableSummary = LekkaSummary(1, 70000.0, 23500.0),
             recentExpenses = sampleExpenses,
             onLekkaSelected = {},
             onQuickAddClick = {},
             onSeeQuickNotesClick = {},
-            onManageAllTablesClick = {}
+            onManageAllTablesClick = {},
+            onTableClick = {}
         )
     }
 }

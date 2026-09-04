@@ -14,7 +14,7 @@ class AppRepository(
 ) {
     val allLekkas: Flow<List<Lekka>> = lekkaDao.getAllLekkas()
 
-    fun getCategoriesByLekka(lekkaId: Long): Flow<List<Category>> = categoryDao.getAllCategories(lekkaId)
+    fun getCategoriesByLekka(lekkaId: Long): Flow<List<Category>> = categoryDao.getCategoriesByLekka(lekkaId)
     
     fun getExpensesByLekka(lekkaId: Long): Flow<List<ExpenseWithCategory>> = expenseDao.getExpensesWithCategory(lekkaId)
 
@@ -35,7 +35,7 @@ class AppRepository(
             if (database != null) {
                 database.populateDatabase()
             } else {
-                lekkaDao.insertLekka(Lekka(name = "Master Expense Sheet", isMotherTable = true, isDefault = false))
+                lekkaDao.insertLekka(Lekka(name = "Master Expense Table", isMotherTable = true, isDefault = false))
                 val defaultChildLekkaId = lekkaDao.insertLekka(Lekka(name = "Monthly Expenses", isMotherTable = false, isDefault = true))
 
                 val categories = listOf(
@@ -65,7 +65,7 @@ class AppRepository(
             categoryDao.deleteAllCategories()
             lekkaDao.deleteAllLekkas()
 
-            val masterLekkaId = lekkaDao.insertLekka(Lekka(name = "Master Expense Sheet", isMotherTable = true, isDefault = false))
+            val masterLekkaId = lekkaDao.insertLekka(Lekka(name = "Master Expense Table", isMotherTable = true, isDefault = false))
             val defaultChildLekkaId = lekkaDao.insertLekka(Lekka(name = "Monthly Expenses", isMotherTable = false, isDefault = true))
 
             val categories = listOf(
@@ -112,6 +112,10 @@ class AppRepository(
 
     suspend fun getMotherTable(): Lekka? {
         return lekkaDao.getMotherTable()
+    }
+
+    suspend fun updateMotherTableName() = withContext(ioDispatcher) {
+        lekkaDao.updateMotherTableName()
     }
 
     suspend fun insertCategory(category: Category) {
