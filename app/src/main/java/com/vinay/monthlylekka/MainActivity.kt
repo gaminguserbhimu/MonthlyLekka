@@ -244,7 +244,6 @@ class MainActivity : ComponentActivity() {
                                         selectedLekkaId = selectedLekkaId,
                                         mostRecentTable = mostRecentTable,
                                         motherTableSummary = motherTableSummary,
-                                        recentExpenses = expenses,
                                         onLekkaSelected = viewModel::selectLekka,
                                         onQuickAddClick = { targetId ->
                                             viewModel.selectLekka(targetId)

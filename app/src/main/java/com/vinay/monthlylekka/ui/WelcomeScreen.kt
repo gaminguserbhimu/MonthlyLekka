@@ -5,10 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -17,7 +15,6 @@ import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDropDown
-import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.TableChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,14 +30,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.vinay.monthlylekka.data.Category
-import com.vinay.monthlylekka.data.Expense
-import com.vinay.monthlylekka.data.ExpenseWithCategoryAndLekka
 import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.LekkaWithSummary
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
-import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,7 +47,6 @@ fun WelcomeScreen(
     onManageAllTablesClick: () -> Unit,
     modifier: Modifier = Modifier,
     motherTableSummary: LekkaSummary? = null,
-    recentExpenses: List<ExpenseWithCategoryAndLekka> = emptyList(),
     onTableClick: (Long) -> Unit = onSeeQuickNotesClick,
     onHelpClick: () -> Unit = {}
 ) {
@@ -109,8 +101,7 @@ fun WelcomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = if (isLargeScreen) 24.dp else 16.dp, vertical = 8.dp)
-                .verticalScroll(rememberScrollState()),
+                .padding(horizontal = if (isLargeScreen) 24.dp else 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -349,31 +340,6 @@ fun WelcomeScreen(
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary
                     )
-                }
-            }
-
-            // 7. Recent Transactions Section (if any)
-            if (recentExpenses.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = 700.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Recent Transactions",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
-
-                    recentExpenses.take(5).forEach { item ->
-                        ExpenseItemCard(
-                            item = item,
-                            isMotherTable = true,
-                            onExpenseClick = { onTableClick(item.expense.lekkaId) }
-                        )
-                    }
                 }
             }
         }
@@ -905,26 +871,12 @@ fun WelcomeScreenPreview() {
         )
     )
 
-    val sampleExpenses = listOf(
-        ExpenseWithCategoryAndLekka(
-            Expense(1, 2, "Hotel Booking", 5000.0, 1, LocalDate.now()),
-            Category(1, 2, "Travel", "#1E88E5", false),
-            "Goa Trip"
-        ),
-        ExpenseWithCategoryAndLekka(
-            Expense(2, 2, "Salary", 50000.0, 2, LocalDate.now()),
-            Category(2, 2, "Income", "#2E7D32", true),
-            "Home Expenses"
-        )
-    )
-
     MonthlyLekkaTheme {
         WelcomeScreen(
             lekkas = sampleLekkas,
             selectedLekkaId = 1,
             mostRecentTable = sampleLekkas[1].lekka,
             motherTableSummary = LekkaSummary(1, 70000.0, 23500.0),
-            recentExpenses = sampleExpenses,
             onLekkaSelected = {},
             onQuickAddClick = {},
             onSeeQuickNotesClick = {},
