@@ -388,10 +388,10 @@ fun TransactionsSlide(
                         expenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
                     }
                     val netBalance = totalIncome - totalOutcome
-                    val netSign = if (netBalance >= 0) "+" else "-"
+                    val netSign = if (netBalance >= 0) "+ " else "- "
                     val netColor = if (netBalance >= 0) Color(0xFF10B981) else Color(0xFFEF4444)
                     val absNet = if (netBalance < 0) -netBalance else netBalance
-                    val netText = "$netSign ${absNet.toCurrencyString()}"
+                    val netText = "$netSign${absNet.toCurrencyString()}"
 
                     // Left Side: Transaction Count with Logo
                     Row(
@@ -412,67 +412,41 @@ fun TransactionsSlide(
                         )
                     }
 
-                    // Right Side: Total Income, Total Outcome & Net Balance (Right-Aligned)
+                    // Right Side: Explicit Calculation Formula (Income - Outcome = Result)
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Income Pill
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Rounded.TrendingUp,
-                                contentDescription = "Total Income",
-                                tint = Color(0xFF10B981),
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = totalIncome.toCurrencyString(),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF10B981)
-                            )
-                        }
-
-                        // Outcome Pill
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Rounded.TrendingDown,
-                                contentDescription = "Total Outcome",
-                                tint = Color(0xFFEF4444),
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = totalOutcome.toCurrencyString(),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFEF4444)
-                            )
-                        }
-
-                        // Net Balance Pill
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (netBalance >= 0) Icons.AutoMirrored.Rounded.TrendingUp else Icons.AutoMirrored.Rounded.TrendingDown,
-                                contentDescription = "Net Balance",
-                                tint = netColor,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = netText,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = netColor
-                            )
-                        }
+                        Text(
+                            text = totalIncome.toCurrencyString(),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF10B981)
+                        )
+                        Text(
+                            text = "-",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Text(
+                            text = totalOutcome.toCurrencyString(),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFEF4444)
+                        )
+                        Text(
+                            text = "=",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Text(
+                            text = netText,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = netColor
+                        )
                     }
                 }
             }
