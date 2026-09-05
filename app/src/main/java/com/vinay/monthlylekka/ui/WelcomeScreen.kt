@@ -164,7 +164,7 @@ fun WelcomeScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(
-                                text = "Active Expense Table: ",
+                                text = "Active: ",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -786,7 +786,7 @@ fun MostRecentlyUpdatedExpenseTableCard(
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Text(
-                            text = "⚡ MOST RECENTLY UPDATED EXPENSE TABLE",
+                            text = "⚡ RECENT TABLE",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             maxLines = 1,
@@ -815,7 +815,7 @@ fun MostRecentlyUpdatedExpenseTableCard(
                 }
 
                 Text(
-                    text = "View Details ➔",
+                    text = "Details ➔",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
