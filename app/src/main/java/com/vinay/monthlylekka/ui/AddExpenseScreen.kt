@@ -1,8 +1,10 @@
 package com.vinay.monthlylekka.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -178,7 +180,9 @@ fun AddExpenseScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(24.dp)
-                .widthIn(max = 600.dp),
+                .widthIn(max = 600.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 80.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

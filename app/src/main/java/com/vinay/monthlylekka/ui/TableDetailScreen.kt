@@ -33,6 +33,8 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -686,53 +688,70 @@ fun SinglePieChartCard(
                     )
                 }
 
-                Box(
-                    modifier = Modifier.size(180.dp),
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Canvas(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pointerInput(groupedData, totalAmount) {
-                                detectTapGestures { tapOffset ->
-                                    val centerX = size.width / 2f
-                                    val centerY = size.height / 2f
-                                    val dx = tapOffset.x - centerX
-                                    val dy = tapOffset.y - centerY
-                                    val distance = sqrt(dx * dx + dy * dy)
-                                    val maxRadius = min(size.width, size.height) / 2f
+                    val chartRadius = (min(maxWidth, maxHeight) * 0.38f)
+                    val chartDiameter = chartRadius * 2
 
-                                    if (distance <= maxRadius && totalAmount > 0) {
-                                        var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
-                                        if (angle < 0) angle += 360f
-                                        val touchAngle = (angle - 270f + 360f) % 360f
+                    Box(
+                        modifier = Modifier.size(chartDiameter),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Canvas(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .pointerInput(groupedData, totalAmount) {
+                                    detectTapGestures { tapOffset ->
+                                        val centerX = size.width / 2f
+                                        val centerY = size.height / 2f
+                                        val dx = tapOffset.x - centerX
+                                        val dy = tapOffset.y - centerY
+                                        val distance = sqrt(dx * dx + dy * dy)
+                                        val maxRadius = min(size.width, size.height) / 2f
 
-                                        var currentSweep = 0f
-                                        for ((catName, amount) in groupedData) {
-                                            val sweep = ((amount / totalAmount) * 360f).toFloat()
-                                            if (touchAngle >= currentSweep && touchAngle <= currentSweep + sweep) {
-                                                selectedCategoryName = catName
-                                                break
+                                        if (distance <= maxRadius && totalAmount > 0) {
+                                            var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                                            if (angle < 0) angle += 360f
+                                            val touchAngle = (angle - 270f + 360f) % 360f
+
+                                            var currentSweep = 0f
+                                            for ((catName, amount) in groupedData) {
+                                                val sweep = ((amount / totalAmount) * 360f).toFloat()
+                                                if (touchAngle >= currentSweep && touchAngle <= currentSweep + sweep) {
+                                                    selectedCategoryName = catName
+                                                    break
+                                                }
+                                                currentSweep += sweep
                                             }
-                                            currentSweep += sweep
                                         }
                                     }
                                 }
-                            }
-                    ) {
-                        var startAngle = -90f
-                        groupedData.forEach { (categoryName, amount) ->
-                            val sweepAngle = ((amount / totalAmount) * 360f).toFloat()
-                            val isSelected = (categoryName == selectedCategoryName)
-                            val color = categoryColors[categoryName] ?: Color.Gray
+                        ) {
+                            var startAngle = -90f
+                            groupedData.forEach { (categoryName, amount) ->
+                                val sweepAngle = ((amount / totalAmount) * 360f).toFloat()
+                                val isSelected = (categoryName == selectedCategoryName)
+                                val color = categoryColors[categoryName] ?: Color.Gray
 
-                            if (isSelected) {
-                                val midAngleRad = Math.toRadians((startAngle + sweepAngle / 2f).toDouble())
-                                val offsetDistance = 10.dp.toPx()
-                                val dx = (cos(midAngleRad) * offsetDistance).toFloat()
-                                val dy = (sin(midAngleRad) * offsetDistance).toFloat()
+                                if (isSelected) {
+                                    val midAngleRad = Math.toRadians((startAngle + sweepAngle / 2f).toDouble())
+                                    val offsetDistance = 10.dp.toPx()
+                                    val dx = (cos(midAngleRad) * offsetDistance).toFloat()
+                                    val dy = (sin(midAngleRad) * offsetDistance).toFloat()
 
-                                translate(left = dx, top = dy) {
+                                    translate(left = dx, top = dy) {
+                                        drawArc(
+                                            color = color,
+                                            startAngle = startAngle,
+                                            sweepAngle = sweepAngle,
+                                            useCenter = true
+                                        )
+                                    }
+                                } else {
                                     drawArc(
                                         color = color,
                                         startAngle = startAngle,
@@ -740,35 +759,28 @@ fun SinglePieChartCard(
                                         useCenter = true
                                     )
                                 }
-                            } else {
-                                drawArc(
-                                    color = color,
-                                    startAngle = startAngle,
-                                    sweepAngle = sweepAngle,
-                                    useCenter = true
-                                )
+                                startAngle += sweepAngle
                             }
-                            startAngle += sweepAngle
                         }
-                    }
 
-                    Surface(
-                        modifier = Modifier.size(90.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "Total",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = totalAmount.toCurrencyString(),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
+                        Surface(
+                            modifier = Modifier.size(chartRadius * 1.0f),
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "Total",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = totalAmount.toCurrencyString(),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }

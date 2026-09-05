@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.core.graphics.toColorInt
 import com.vinay.monthlylekka.data.Category
 import com.vinay.monthlylekka.data.Expense
@@ -127,52 +128,59 @@ fun BarChart(summaries: List<MonthlySummary>) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
+            BoxWithConstraints(
                 modifier = Modifier
-                    .height(200.dp)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Bottom
+                    .fillMaxWidth()
             ) {
-                chartData.forEach { summary ->
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Bottom
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .weight(1f),
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                val chartRadius = (min(maxWidth, maxHeight) * 0.38f)
+                val chartHeight = (chartRadius * 2.5f).coerceIn(160.dp, 240.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(chartHeight),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    chartData.forEach { summary ->
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Bottom
                         ) {
-                            // Income Bar
-                            Box(
+                            Row(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight((summary.totalIncome / maxVal).toFloat().coerceIn(0.01f, 1f))
-                                    .background(incomeColor, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                            )
-                            // Expense Bar
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight((summary.totalExpense / maxVal).toFloat().coerceIn(0.01f, 1f))
-                                    .background(expenseColor, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                    .fillMaxHeight()
+                                    .weight(1f),
+                                verticalAlignment = Alignment.Bottom,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                // Income Bar
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight((summary.totalIncome / maxVal).toFloat().coerceIn(0.01f, 1f))
+                                        .background(incomeColor, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                )
+                                // Expense Bar
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight((summary.totalExpense / maxVal).toFloat().coerceIn(0.01f, 1f))
+                                        .background(expenseColor, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            val monthLabel = try {
+                                YearMonth.parse(summary.month).format(DateTimeFormatter.ofPattern("MMM"))
+                            } catch (_: Exception) {
+                                summary.month
+                            }
+                            Text(
+                                text = monthLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                textAlign = TextAlign.Center
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        val monthLabel = try {
-                            YearMonth.parse(summary.month).format(DateTimeFormatter.ofPattern("MMM"))
-                        } catch (_: Exception) {
-                            summary.month
-                        }
-                        Text(
-                            text = monthLabel,
-                            style = MaterialTheme.typography.labelSmall,
-                            textAlign = TextAlign.Center
-                        )
                     }
                 }
             }
@@ -336,50 +344,66 @@ fun PieChart(expenses: List<ExpenseWithCategory>) {
             Text("Expenses by Category", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(24.dp))
             
-            Box(modifier = Modifier.size(200.dp), contentAlignment = Alignment.Center) {
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(expenseData, total) {
-                            detectTapGestures { tapOffset ->
-                                val centerX = size.width / 2f
-                                val centerY = size.height / 2f
-                                val dx = tapOffset.x - centerX
-                                val dy = tapOffset.y - centerY
-                                val distance = sqrt(dx * dx + dy * dy)
-                                val maxRadius = min(size.width, size.height) / 2f
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                val chartRadius = (min(maxWidth, maxHeight) * 0.38f)
+                val chartDiameter = chartRadius * 2
+                Box(modifier = Modifier.size(chartDiameter), contentAlignment = Alignment.Center) {
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerInput(expenseData, total) {
+                                detectTapGestures { tapOffset ->
+                                    val centerX = size.width / 2f
+                                    val centerY = size.height / 2f
+                                    val dx = tapOffset.x - centerX
+                                    val dy = tapOffset.y - centerY
+                                    val distance = sqrt(dx * dx + dy * dy)
+                                    val maxRadius = min(size.width, size.height) / 2f
 
-                                if (distance <= maxRadius && total > 0) {
-                                    var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
-                                    if (angle < 0) angle += 360f
-                                    val touchAngle = (angle - 270f + 360f) % 360f
+                                    if (distance <= maxRadius && total > 0) {
+                                        var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                                        if (angle < 0) angle += 360f
+                                        val touchAngle = (angle - 270f + 360f) % 360f
 
-                                    var currentSweep = 0f
-                                    for ((catName, amount) in expenseData) {
-                                        val sweep = ((amount / total) * 360f).toFloat()
-                                        if (touchAngle >= currentSweep && touchAngle <= currentSweep + sweep) {
-                                            selectedCategoryName = catName
-                                            break
+                                        var currentSweep = 0f
+                                        for ((catName, amount) in expenseData) {
+                                            val sweep = ((amount / total) * 360f).toFloat()
+                                            if (touchAngle >= currentSweep && touchAngle <= currentSweep + sweep) {
+                                                selectedCategoryName = catName
+                                                break
+                                            }
+                                            currentSweep += sweep
                                         }
-                                        currentSweep += sweep
                                     }
                                 }
                             }
-                        }
-                ) {
-                    var startAngle = -90f
-                    expenseData.forEach { (name, amount) ->
-                        val sweepAngle = ((amount / total) * 360f).toFloat()
-                        val isSelected = (name == selectedCategoryName)
-                        val color = categoryColors[name] ?: Color.Gray
+                    ) {
+                        var startAngle = -90f
+                        expenseData.forEach { (name, amount) ->
+                            val sweepAngle = ((amount / total) * 360f).toFloat()
+                            val isSelected = (name == selectedCategoryName)
+                            val color = categoryColors[name] ?: Color.Gray
 
-                        if (isSelected) {
-                            val midAngleRad = Math.toRadians((startAngle + sweepAngle / 2f).toDouble())
-                            val offsetDistance = 10.dp.toPx()
-                            val dx = (cos(midAngleRad) * offsetDistance).toFloat()
-                            val dy = (sin(midAngleRad) * offsetDistance).toFloat()
+                            if (isSelected) {
+                                val midAngleRad = Math.toRadians((startAngle + sweepAngle / 2f).toDouble())
+                                val offsetDistance = 10.dp.toPx()
+                                val dx = (cos(midAngleRad) * offsetDistance).toFloat()
+                                val dy = (sin(midAngleRad) * offsetDistance).toFloat()
 
-                            translate(left = dx, top = dy) {
+                                translate(left = dx, top = dy) {
+                                    drawArc(
+                                        color = color,
+                                        startAngle = startAngle,
+                                        sweepAngle = sweepAngle,
+                                        useCenter = true
+                                    )
+                                }
+                            } else {
                                 drawArc(
                                     color = color,
                                     startAngle = startAngle,
@@ -387,15 +411,8 @@ fun PieChart(expenses: List<ExpenseWithCategory>) {
                                     useCenter = true
                                 )
                             }
-                        } else {
-                            drawArc(
-                                color = color,
-                                startAngle = startAngle,
-                                sweepAngle = sweepAngle,
-                                useCenter = true
-                            )
+                            startAngle += sweepAngle
                         }
-                        startAngle += sweepAngle
                     }
                 }
             }
