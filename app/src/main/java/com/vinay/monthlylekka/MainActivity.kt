@@ -1,5 +1,6 @@
 package com.vinay.monthlylekka
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,10 +41,14 @@ import com.vinay.monthlylekka.ui.viewmodel.ExpenseViewModel
 import com.vinay.monthlylekka.ui.viewmodel.ExpenseViewModelFactory
 
 class MainActivity : ComponentActivity() {
+
+    private val startDestinationState = mutableStateOf<String?>(null)
+
     @OptIn(ExperimentalMaterial3AdaptiveApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handleIntent(intent)
 
         setContent {
             MonthlyLekkaTheme {
@@ -52,11 +57,25 @@ class MainActivity : ComponentActivity() {
                     factory = ExpenseViewModelFactory((application as MonthlyLekkaApplication).repository)
                 )
                 var backStack by rememberSaveable { mutableStateOf(listOf<Route>(Route.Welcome)) }
+                val startDestination by remember { startDestinationState }
                 val allLekkasWithSummary by viewModel.allLekkasWithSummary.collectAsState()
                 val selectedLekkaId by viewModel.selectedLekkaId.collectAsState()
                 val isMotherTableSelected by viewModel.isMotherTableSelected.collectAsState()
                 val motherTableSummary by viewModel.motherTableSummary.collectAsState()
                 val mostRecentTable by viewModel.mostRecentTable.collectAsState()
+
+                LaunchedEffect(startDestination, selectedLekkaId, mostRecentTable) {
+                    if (startDestination == "add_expense") {
+                        val targetId = selectedLekkaId ?: mostRecentTable?.id ?: 0L
+                        if (targetId != 0L) {
+                            viewModel.selectLekka(targetId)
+                        }
+                        if (backStack.none { it is Route.AddExpense && it.expenseId == null }) {
+                            backStack = backStack + Route.AddExpense(targetId)
+                        }
+                        startDestinationState.value = null
+                    }
+                }
                 
                 val expenses by viewModel.expenses.collectAsState()
                 val categories by viewModel.categories.collectAsState()
@@ -413,6 +432,19 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        val destination = intent?.getStringExtra("START_DESTINATION")
+        if (destination != null) {
+            startDestinationState.value = destination
         }
     }
 }
