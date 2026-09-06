@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Monthly Expenses</string>
-    <string name="widget_quick_add_title">⚡ Quick Add Expense</string>
+    <string name="widget_quick_add_title">Quick Add</string>
     <string name="wallet_icon_desc">Wallet Icon</string>
 </resources>
