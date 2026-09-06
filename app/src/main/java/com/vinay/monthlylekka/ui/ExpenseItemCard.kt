@@ -3,6 +3,7 @@ package com.vinay.monthlylekka.ui
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,6 +37,7 @@ fun ExpenseItemCard(
     modifier: Modifier = Modifier,
     isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
+    showOriginTag: Boolean = isMotherTable && item.lekkaName.isNotBlank(),
     onToggleSelect: () -> Unit = {},
     onLongPressSelect: () -> Unit = {},
     onExpenseClick: (ExpenseWithCategoryAndLekka) -> Unit = {},
@@ -78,7 +80,7 @@ fun ExpenseItemCard(
             brush = SolidColor(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         )
     ) {
-        // 4-Column Layout: Column 1 (Date) | Column 2 (Category) | Column 3 (Description) | Column 4 (Cost)
+        // 4-Column Layout: Column 1 (Date) | Column 2 (Category Badge & optional Origin Tag) | Column 3 (Description) | Column 4 (Cost)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -109,49 +111,55 @@ fun ExpenseItemCard(
                 )
             }
 
-            // Column 2: Category Badge chip with icon avatar
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = categoryColor.copy(alpha = 0.15f)
+            // Column 2: Vertical Column containing Category Badge chip (Top) and optional Origin Tag (Bottom)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                horizontalAlignment = Alignment.Start
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    CategoryIconAvatar(
-                        categoryName = category.name,
-                        colorHex = category.colorHex,
-                        isIncome = category.isIncome,
-                        size = 16.dp,
-                        iconSize = 10.dp
-                    )
-                    Text(
-                        text = category.name,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = categoryColor,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            // Origin Tag Pill (if Master/Mother table and lekkaName is not blank)
-            if (isMotherTable && item.lekkaName.isNotBlank()) {
+                // Top: Category Badge chip with icon avatar
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
+                    color = categoryColor.copy(alpha = 0.15f)
                 ) {
-                    Text(
-                        text = "[${item.lekkaName}]",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        CategoryIconAvatar(
+                            categoryName = category.name,
+                            colorHex = category.colorHex,
+                            isIncome = category.isIncome,
+                            size = 16.dp,
+                            iconSize = 10.dp
+                        )
+                        Text(
+                            text = category.name,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = categoryColor,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                // Bottom (ONLY when showOriginTag == true): Origin Table Tag
+                if (showOriginTag) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text = "[${item.lekkaName}]",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
             }
 
