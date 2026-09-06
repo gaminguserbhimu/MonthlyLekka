@@ -3,9 +3,7 @@ package com.vinay.monthlylekka.ui
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -80,120 +78,109 @@ fun ExpenseItemCard(
             brush = SolidColor(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         )
     ) {
-        Column(
+        // 4-Column Layout: Column 1 (Date) | Column 2 (Category) | Column 3 (Description) | Column 4 (Cost)
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Top Row: Date Badge | Category Badge | Origin Tag | Checkbox (if multi-select mode)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            if (isSelectionMode) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onToggleSelect() }
+                )
+            }
+
+            // Column 1: Date Badge chip (dd/MM/yy)
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
             ) {
-                // Date Badge chip (dd/MM/yy)
+                Text(
+                    text = formattedDate,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+
+            // Column 2: Category Badge chip with icon avatar
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = categoryColor.copy(alpha = 0.15f)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    CategoryIconAvatar(
+                        categoryName = category.name,
+                        colorHex = category.colorHex,
+                        isIncome = category.isIncome,
+                        size = 16.dp,
+                        iconSize = 10.dp
+                    )
+                    Text(
+                        text = category.name,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = categoryColor,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Origin Tag Pill (if Master/Mother table and lekkaName is not blank)
+            if (isMotherTable && item.lekkaName.isNotBlank()) {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
+                    color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Text(
-                        text = formattedDate,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = "[${item.lekkaName}]",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
-
-                // Category Badge chip with icon avatar
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = categoryColor.copy(alpha = 0.15f)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        CategoryIconAvatar(
-                            categoryName = category.name,
-                            colorHex = category.colorHex,
-                            isIncome = category.isIncome,
-                            size = 16.dp,
-                            iconSize = 10.dp
-                        )
-                        Text(
-                            text = category.name,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = categoryColor,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                // Origin Tag Pill (if Master/Mother table and lekkaName is not blank)
-                if (isMotherTable && item.lekkaName.isNotBlank()) {
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Text(
-                            text = "[${item.lekkaName}]",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-
-                // Checkbox (if multi-select mode)
-                if (isSelectionMode) {
-                    Spacer(modifier = Modifier.weight(1f))
-                    Checkbox(
-                        checked = isSelected,
-                        onCheckedChange = { onToggleSelect() }
-                    )
-                }
             }
 
-            // Bottom Row: Description (left) | Amount (right)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = expense.description.ifBlank { "No description" },
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
+            // Column 3: Description - Middle flex space, fits 1 line if short or wraps up to 2 lines if lengthy
+            Text(
+                text = expense.description.ifBlank { "No description" },
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
 
-                val absAmount = abs(expense.amount)
-                val amountText = "${if (category.isIncome) "+" else "-"} ${absAmount.toCurrencyString()}"
-                val amountColor = if (category.isIncome) Color(0xFF10B981) else Color(0xFFEF4444)
+            // Column 4: Cost at last - Right-aligned formatted cost (+ ₹ 10,000 or - ₹ 3,613)
+            val absAmount = abs(expense.amount)
+            val amountText = "${if (category.isIncome) "+" else "-"} ${absAmount.toCurrencyString()}"
+            val amountColor = if (category.isIncome) Color(0xFF10B981) else Color(0xFFEF4444)
 
-                Text(
-                    text = amountText,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
-                    color = amountColor,
-                    textAlign = TextAlign.End,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.wrapContentWidth()
-                )
-            }
+            Text(
+                text = amountText,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
+                color = amountColor,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.wrapContentWidth()
+            )
         }
     }
 }
+
