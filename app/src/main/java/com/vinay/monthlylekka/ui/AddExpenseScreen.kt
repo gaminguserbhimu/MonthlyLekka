@@ -156,28 +156,6 @@ fun AddExpenseScreen(
                     titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    val amountValue = amount.toDoubleOrNull() ?: 0.0
-                    val categoryId = selectedCategory?.id
-                    val targetLekkaId = selectedLekka?.id
-                    if (description.isNotBlank() && amountValue > 0 && categoryId != null) {
-                        onSave(expenseToEdit?.expense?.id, description, amountValue, categoryId, date, targetLekkaId)
-                    }
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(20.dp),
-                icon = { Icon(Icons.Default.Check, contentDescription = "Save") },
-                text = {
-                    Text(
-                        text = if (expenseToEdit == null) "Add Transaction" else "Save Transaction",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-            )
         }
     ) { innerPadding ->
         Column(
@@ -186,8 +164,7 @@ fun AddExpenseScreen(
                 .padding(innerPadding)
                 .padding(24.dp)
                 .widthIn(max = 600.dp)
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 80.dp),
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
