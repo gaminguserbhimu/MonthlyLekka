@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import com.vinay.monthlylekka.data.ExpenseWithCategoryAndLekka
-import java.time.format.DateTimeFormatter
+import kotlin.math.abs
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -38,11 +38,11 @@ fun ExpenseItemCard(
     isSelected: Boolean = false,
     onToggleSelect: () -> Unit = {},
     onLongPressSelect: () -> Unit = {},
-    onExpenseClick: (ExpenseWithCategoryAndLekka) -> Unit = {}
+    onExpenseClick: (ExpenseWithCategoryAndLekka) -> Unit = {},
 ) {
     val expense = item.expense
     val category = item.category
-    val formattedDate = expense.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+    val formattedDate = expense.date.formatShortDate()
 
     val categoryColor = try {
         Color(category.colorHex.toColorInt())
@@ -78,7 +78,7 @@ fun ExpenseItemCard(
             brush = SolidColor(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         )
     ) {
-        // Single Horizontal Line: Date Badge | Category Badge | Origin Badge (if Master) | Description | Amount
+        // 4-Column Layout: Column 1 (Date) | Column 2 (Category) | Column 3 (Description) | Column 4 (Cost)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -93,7 +93,7 @@ fun ExpenseItemCard(
                 )
             }
 
-            // 1. Date Badge
+            // Column 1: Date Badge chip (dd/MM/yy)
             Surface(
                 shape = RoundedCornerShape(6.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant
@@ -109,7 +109,7 @@ fun ExpenseItemCard(
                 )
             }
 
-            // 2. Category Badge
+            // Column 2: Category Badge chip with icon avatar
             Surface(
                 shape = RoundedCornerShape(6.dp),
                 color = categoryColor.copy(alpha = 0.15f)
@@ -137,7 +137,7 @@ fun ExpenseItemCard(
                 }
             }
 
-            // 3. Origin Tag Pill (if Master/Mother table and lekkaName is not blank)
+            // Origin Tag Pill (if Master/Mother table and lekkaName is not blank)
             if (isMotherTable && item.lekkaName.isNotBlank()) {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
@@ -155,19 +155,19 @@ fun ExpenseItemCard(
                 }
             }
 
-            // 4. Description (Positioned on the same line right after badges, maxLines = 1, overflow = Ellipsis)
+            // Column 3: Description - Middle flex space, fits 1 line if short or wraps up to 2 lines if lengthy
             Text(
                 text = expense.description.ifBlank { "No description" },
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                softWrap = false,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
+                modifier = Modifier.weight(1f)
             )
 
-            // 5. Amount
-            val amountText = "${if (category.isIncome) "+" else "-"} ${expense.amount.toCurrencyString()}"
+            // Column 4: Cost at last - Right-aligned formatted cost (+ ₹ 10,000 or - ₹ 3,613)
+            val absAmount = abs(expense.amount)
+            val amountText = "${if (category.isIncome) "+" else "-"} ${absAmount.toCurrencyString()}"
             val amountColor = if (category.isIncome) Color(0xFF10B981) else Color(0xFFEF4444)
 
             Text(
@@ -183,3 +183,4 @@ fun ExpenseItemCard(
         }
     }
 }
+
