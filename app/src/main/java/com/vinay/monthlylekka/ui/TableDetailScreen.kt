@@ -181,7 +181,7 @@ fun TableDetailScreen(
                                         color = Color(0xFFF59E0B)
                                     ) {
                                         Text(
-                                            text = "👑 MASTER EXPENSE TABLE",
+                                            text = "👑 MASTER",
                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                             color = Color.White,
                                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -228,7 +228,7 @@ fun TableDetailScreen(
                     icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
                     text = {
                         Text(
-                            if (isMotherTable) "Add Expense (Select Expense Table)" else "Add Expense",
+                            "Add Expense",
                             fontWeight = FontWeight.Bold
                         )
                     },
