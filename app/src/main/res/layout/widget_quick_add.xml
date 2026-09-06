@@ -6,14 +6,14 @@
     android:background="@drawable/widget_background"
     android:gravity="center"
     android:orientation="horizontal"
-    android:padding="12dp"
+    android:padding="8dp"
     android:clickable="true"
     android:focusable="true">
 
     <ImageView
         android:id="@+id/widget_icon"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
         android:layout_marginEnd="8dp"
         android:contentDescription="@string/wallet_icon_desc"
         android:src="@drawable/ic_wallet" />
@@ -24,7 +24,9 @@
         android:layout_height="wrap_content"
         android:text="@string/widget_quick_add_title"
         android:textColor="#FFFFFFFF"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:singleLine="true"
+        android:ellipsize="end" />
 
 </LinearLayout>
