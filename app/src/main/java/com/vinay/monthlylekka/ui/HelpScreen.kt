@@ -154,11 +154,11 @@ fun HelpScreen(
                 }
             }
 
-            // Section 1: 👑 Master Expense Table
+            // Section 1: 👑 Master Table
             HelpSectionCard(
                 icon = Icons.Rounded.Stars,
                 iconTint = Color(0xFFFFB300),
-                title = "👑 Master Expense Table",
+                title = "👑 Master Table",
                 badgeText = "MASTER",
                 containerColor = MaterialTheme.colorScheme.surface
             ) {
@@ -176,11 +176,11 @@ fun HelpScreen(
                 )
             }
 
-            // Section 2: 📊 Expense Tables & Events
+            // Section 2: 📊 Tables
             HelpSectionCard(
                 icon = Icons.Rounded.TableChart,
                 iconTint = MaterialTheme.colorScheme.primary,
-                title = "📊 Expense Tables & Events",
+                title = "📊 Tables",
                 badgeText = "TABLES",
                 containerColor = MaterialTheme.colorScheme.surface
             ) {

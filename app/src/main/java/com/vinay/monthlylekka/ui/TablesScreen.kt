@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -89,7 +90,7 @@ fun TablesScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "All Expense Tables",
+                        text = "All Tables",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 },
@@ -113,7 +114,7 @@ fun TablesScreen(
                     ) {
                         Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Create Expense Table", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                        Text("Add Table", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             )
@@ -128,7 +129,7 @@ fun TablesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Section 1: Master Expense Table
+            // Section 1: Master Table
             if (masterLekkaWithSummary != null) {
                 item {
                     Column(
@@ -138,7 +139,7 @@ fun TablesScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "MASTER EXPENSE TABLE (AGGREGATED)",
+                            text = "MASTER TABLE",
                             style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.2.sp),
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
@@ -153,7 +154,7 @@ fun TablesScreen(
                 }
             }
 
-            // Section 2: Expense Tables & Events
+            // Section 2: Tables
             item {
                 Row(
                     modifier = Modifier
@@ -163,13 +164,13 @@ fun TablesScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Expense Tables & Events",
+                        text = "Tables",
                         style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.2.sp),
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${childLekkas.size} Expense Tables",
+                        text = "${childLekkas.size} Tables",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -191,7 +192,7 @@ fun TablesScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "No expense tables created yet. Click '+ Create Expense Table' to add one!",
+                                "No tables created yet. Click '+ Add Table' to add one!",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -327,9 +328,12 @@ fun MasterTableOverviewCard(
                             color = Color(0xFFF59E0B)
                         ) {
                             Text(
-                                text = "👑 MASTER EXPENSE TABLE",
+                                text = "👑 MASTER",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                 color = Color.White,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
@@ -344,6 +348,9 @@ fun MasterTableOverviewCard(
                                     text = "★ DEFAULT",
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
                                     color = Color.White,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
@@ -351,9 +358,12 @@ fun MasterTableOverviewCard(
                     }
 
                     Text(
-                        text = "Tap to View Detail ➔",
+                        text = "Details ➔",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = Color.White.copy(alpha = 0.9f)
+                        color = Color.White.copy(alpha = 0.9f),
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -442,15 +452,21 @@ fun ChildTableCard(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text(
                         text = lekka.name,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
 
                     if (lekka.isDefault) {
-                        Spacer(modifier = Modifier.width(8.dp))
                         Surface(
                             shape = RoundedCornerShape(6.dp),
                             color = Color(0xFF10B981)
@@ -459,6 +475,9 @@ fun ChildTableCard(
                                 text = "★ DEFAULT",
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
                                 color = Color.White,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
@@ -605,7 +624,7 @@ fun DataBackupSection(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("📄 Export to CSV (Excel)", fontWeight = FontWeight.SemiBold)
+                    Text("Export to CSV", fontWeight = FontWeight.SemiBold)
                 }
 
                 FilledTonalButton(
@@ -619,7 +638,7 @@ fun DataBackupSection(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("📦 Export Backup (JSON)", fontWeight = FontWeight.SemiBold)
+                    Text("Export Backup", fontWeight = FontWeight.SemiBold)
                 }
 
                 Button(
@@ -633,7 +652,7 @@ fun DataBackupSection(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("📥 Import Backup (JSON)", fontWeight = FontWeight.SemiBold)
+                    Text("Import Backup", fontWeight = FontWeight.SemiBold)
                 }
             }
         }

@@ -342,7 +342,7 @@ fun WelcomeScreen(
                     Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        "Quick Add",
+                        "+ Quick Add",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         maxLines = 1,
                         softWrap = false,
@@ -594,7 +594,7 @@ fun OverallFinancialSummaryCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Master Expense Table",
+                        text = "MASTER TABLE",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = Color.White,
                         maxLines = 1,

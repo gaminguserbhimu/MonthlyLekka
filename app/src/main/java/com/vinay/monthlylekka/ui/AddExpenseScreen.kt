@@ -132,7 +132,7 @@ fun AddExpenseScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(if (expenseToEdit == null) "Add Expense" else "Edit Expense", fontWeight = FontWeight.Bold) },
+                title = { Text(if (expenseToEdit == null) "Add Transaction" else "Edit Transaction", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     if (showBackButton) {
                         IconButton(onClick = onBack) {
@@ -158,7 +158,7 @@ fun AddExpenseScreen(
             )
         },
         floatingActionButton = {
-            LargeFloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = {
                     val amountValue = amount.toDoubleOrNull() ?: 0.0
                     val categoryId = selectedCategory?.id
@@ -169,10 +169,15 @@ fun AddExpenseScreen(
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(28.dp)
-            ) {
-                Icon(if (expenseToEdit == null) Icons.Default.Check else Icons.Default.Check, contentDescription = "Save Expense")
-            }
+                shape = RoundedCornerShape(20.dp),
+                icon = { Icon(Icons.Default.Check, contentDescription = "Save") },
+                text = {
+                    Text(
+                        text = if (expenseToEdit == null) "Add Transaction" else "Save Transaction",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
+            )
         }
     ) { innerPadding ->
         Column(
@@ -367,6 +372,33 @@ fun AddExpenseScreen(
                         }
                     }
                 }
+            }
+
+            // Submit Button
+            Button(
+                onClick = {
+                    val amountValue = amount.toDoubleOrNull() ?: 0.0
+                    val categoryId = selectedCategory?.id
+                    val targetLekkaId = selectedLekka?.id
+                    if (description.isNotBlank() && amountValue > 0 && categoryId != null) {
+                        onSave(expenseToEdit?.expense?.id, description, amountValue, categoryId, date, targetLekkaId)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Icon(Icons.Default.Check, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (expenseToEdit == null) "Add Transaction" else "Save Transaction",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
             }
         }
     }
