@@ -56,6 +56,7 @@ import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 data class YearlySummary(
     val year: String,
@@ -390,10 +391,10 @@ fun TransactionsSlide(
                         expenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
                     }
                     val netBalance = totalIncome - totalOutcome
-                    val netSign = if (netBalance >= 0) "+ " else "- "
-                    val netColor = if (netBalance >= 0) Color(0xFF10B981) else Color(0xFFEF4444)
-                    val absNet = if (netBalance < 0) -netBalance else netBalance
-                    val netText = "$netSign${absNet.toCurrencyString()}"
+                    val isPositive = netBalance >= 0
+                    val absBalanceStr = abs(netBalance).toCurrencyString()
+                    val resultText = if (isPositive) "+ $absBalanceStr" else "- $absBalanceStr"
+                    val netColor = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
 
                     // Left Side: Transaction Count with Logo
                     Row(
@@ -444,7 +445,7 @@ fun TransactionsSlide(
                             color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                         Text(
-                            text = netText,
+                            text = resultText,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = netColor

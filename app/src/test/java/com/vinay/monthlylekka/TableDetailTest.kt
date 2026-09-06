@@ -3,8 +3,10 @@ package com.vinay.monthlylekka
 import com.vinay.monthlylekka.data.MonthlySummary
 import com.vinay.monthlylekka.ui.Route
 import com.vinay.monthlylekka.ui.YearlySummary
+import com.vinay.monthlylekka.ui.toCurrencyString
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import kotlin.math.abs
 
 class TableDetailTest {
 
@@ -116,4 +118,20 @@ class TableDetailTest {
         assertEquals(2000.0, year2026CategoryMap["Food"] ?: 0.0, 0.01)
         assertEquals(3500.0, year2026CategoryMap.values.sum(), 0.01)
     }
+
+    @Test
+    fun topSummaryFormula_formatsNetBalanceWithSignAndAbsoluteValue() {
+        val positiveNetBalance = 153.0
+        val isPositive1 = positiveNetBalance >= 0
+        val absBalanceStr1 = abs(positiveNetBalance).toCurrencyString()
+        val resultText1 = if (isPositive1) "+ $absBalanceStr1" else "- $absBalanceStr1"
+        assertEquals("+ ₹ 153", resultText1)
+
+        val negativeNetBalance = -153.0
+        val isPositive2 = negativeNetBalance >= 0
+        val absBalanceStr2 = abs(negativeNetBalance).toCurrencyString()
+        val resultText2 = if (isPositive2) "+ $absBalanceStr2" else "- $absBalanceStr2"
+        assertEquals("- ₹ 153", resultText2)
+    }
 }
+
