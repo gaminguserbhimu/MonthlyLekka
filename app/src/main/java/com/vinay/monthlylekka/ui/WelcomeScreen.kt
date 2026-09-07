@@ -39,6 +39,7 @@ import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.LekkaWithSummary
 import com.vinay.monthlylekka.data.MonthlyCycle
+import com.vinay.monthlylekka.ui.components.AmazonBannerAdView
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -406,6 +407,13 @@ fun WelcomeScreen(
                     )
                 }
             }
+
+            // Amazon Banner Ad View at the bottom
+            AmazonBannerAdView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 700.dp)
+            )
         }
     }
 

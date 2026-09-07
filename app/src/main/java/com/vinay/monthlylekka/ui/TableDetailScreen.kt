@@ -46,6 +46,7 @@ import com.vinay.monthlylekka.data.ExpenseWithCategoryAndLekka
 import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.MonthlyCycle
 import com.vinay.monthlylekka.data.MonthlySummary
+import com.vinay.monthlylekka.ui.components.AmazonBannerAdView
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 import java.time.LocalDate
 import java.time.YearMonth
@@ -391,6 +392,9 @@ fun TableDetailScreen(
                     )
                 }
             }
+
+            // Amazon Banner Ad View anchored at screen bottom
+            AmazonBannerAdView(modifier = Modifier.fillMaxWidth())
         }
     }
 

@@ -37,6 +37,7 @@ import com.vinay.monthlylekka.data.CategorySpec
 import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.LekkaWithSummary
+import com.vinay.monthlylekka.ui.components.AmazonBannerAdView
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -238,6 +239,17 @@ fun TablesScreen(
                         onExportBackupClick = { exportJsonLauncher.launch("monthly_lekka_backup.json") },
                         onImportBackupClick = { importJsonLauncher.launch("application/json") }
                     )
+                }
+            }
+
+            // Section 4: Amazon Banner Ad
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 700.dp)
+                ) {
+                    AmazonBannerAdView(modifier = Modifier.fillMaxWidth())
                 }
             }
         }
