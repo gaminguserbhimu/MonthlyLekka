@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Analytics
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Lightbulb
@@ -285,7 +286,29 @@ fun HelpScreen(
                 )
             }
 
-            // Section 6: 💾 Data Backup & Export
+            // Section 6: 📅 Custom Monthly Cycles & Past Months Archive
+            HelpSectionCard(
+                icon = Icons.Rounded.CalendarMonth,
+                iconTint = Color(0xFF8E24AA),
+                title = "📅 Custom Monthly Cycles & Past Months Archive",
+                badgeText = "CYCLES",
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                HelpBulletItem(
+                    title = "Custom Month Start Day",
+                    description = "Setting a custom Month Start Day (e.g. 5th of every month) automatically calculates the active cycle (e.g. 5th Sep to 4th Oct)."
+                )
+                HelpBulletItem(
+                    title = "Automatic Cycle Refresh",
+                    description = "The active cycle automatically refreshes on the next cycle date (e.g. 5th Oct) so your active financial calculations stay up to date."
+                )
+                HelpBulletItem(
+                    title = "Past Months Archive",
+                    description = "View past month records month-by-month using the 📅 Active Cycle dropdown selector in Table Details."
+                )
+            }
+
+            // Section 7: 💾 Data Backup & Export
             DataBackupSection(
                 onExportCsvClick = { exportCsvLauncher.launch("monthly_lekka_expenses.csv") },
                 onExportBackupClick = { exportJsonLauncher.launch("monthly_lekka_backup.json") },
