@@ -16,7 +16,11 @@ import com.vinay.monthlylekka.data.ExpenseWithCategoryAndLekka
 import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.LekkaWithSummary
+import com.vinay.monthlylekka.data.MonthlyCycle
 import com.vinay.monthlylekka.data.MonthlySummary
+import com.vinay.monthlylekka.data.UserPreferences
+import com.vinay.monthlylekka.data.getMonthlyCycleForDate
+import com.vinay.monthlylekka.data.getPastMonthlyCycles
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,8 +42,36 @@ import java.util.Collections
 
 class ExpenseViewModel(
     private val repository: AppRepository,
+    private val userPreferences: UserPreferences = UserPreferences(null),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
+
+    val monthStartDay: StateFlow<Int> = userPreferences.monthStartDay
+
+    private val _selectedCycle = MutableStateFlow(
+        getMonthlyCycleForDate(LocalDate.now(), monthStartDay.value)
+    )
+    val selectedCycle: StateFlow<MonthlyCycle> = _selectedCycle.asStateFlow()
+
+    val pastCycles: StateFlow<List<MonthlyCycle>> = monthStartDay
+        .map { startDay ->
+            getPastMonthlyCycles(LocalDate.now(), startDay)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = getPastMonthlyCycles(LocalDate.now(), monthStartDay.value)
+        )
+
+    fun updateMonthStartDay(day: Int) {
+        val validDay = day.coerceIn(UserPreferences.MIN_DAY, UserPreferences.MAX_DAY)
+        userPreferences.setMonthStartDay(validDay)
+        _selectedCycle.value = getMonthlyCycleForDate(LocalDate.now(), validDay)
+    }
+
+    fun selectCycle(cycle: MonthlyCycle) {
+        _selectedCycle.value = cycle
+    }
 
     private val _selectedLekkaId = MutableStateFlow<Long?>(null)
     val selectedLekkaId: StateFlow<Long?> = _selectedLekkaId.asStateFlow()
@@ -68,13 +100,26 @@ class ExpenseViewModel(
         initialValue = false
     )
 
-    val motherTableSummary: StateFlow<LekkaSummary?> = repository.getMotherTableSummary()
-        .map { summary -> summary ?: LekkaSummary(0, 0.0, 0.0) }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = LekkaSummary(0, 0.0, 0.0)
+    val motherTableSummary: StateFlow<LekkaSummary?> = combine(
+        repository.getAllExpensesWithCategoryAndLekka(),
+        selectedCycle
+    ) { allExpenses, cycle ->
+        val filtered = allExpenses.filter { item ->
+            val date = item.expense.date
+            !date.isBefore(cycle.startDate) && !date.isAfter(cycle.endDate)
+        }
+        val totalIncome = filtered.filter { it.category.isIncome }.sumOf { it.expense.amount }
+        val totalExpense = filtered.filter { !it.category.isIncome }.sumOf { it.expense.amount }
+        LekkaSummary(
+            lekkaId = 0L,
+            totalIncome = totalIncome,
+            totalExpense = totalExpense
         )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = LekkaSummary(0L, 0.0, 0.0)
+    )
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val mostRecentTable: StateFlow<Lekka?> = combine(allLekkas, repository.getAllExpensesWithCategoryAndLekka()) { lekkas, allExpenses ->
@@ -99,38 +144,59 @@ class ExpenseViewModel(
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val allLekkasWithSummary: StateFlow<List<LekkaWithSummary>> = allLekkas
-        .flatMapLatest { lekkas ->
-            if (lekkas.isEmpty()) return@flatMapLatest flowOf(emptyList())
-            combine(lekkas.map { lekka ->
-                val summaryFlow = if (lekka.isMotherTable) {
-                    repository.getMotherTableSummary()
+    val allLekkasWithSummary: StateFlow<List<LekkaWithSummary>> = combine(
+        allLekkas,
+        repository.getAllExpensesWithCategoryAndLekka(),
+        selectedCycle
+    ) { lekkas, allExpenses, cycle ->
+        if (lekkas.isEmpty()) emptyList()
+        else {
+            val cycleExpenses = allExpenses.filter { item ->
+                val date = item.expense.date
+                !date.isBefore(cycle.startDate) && !date.isAfter(cycle.endDate)
+            }
+            lekkas.map { lekka ->
+                val summary = if (lekka.isMotherTable) {
+                    val totalIncome = cycleExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
+                    val totalExpense = cycleExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
+                    LekkaSummary(lekka.id, totalIncome, totalExpense)
                 } else {
-                    repository.getLekkaSummary(lekka.id)
+                    val tableExpenses = cycleExpenses.filter { it.expense.lekkaId == lekka.id }
+                    val totalIncome = tableExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
+                    val totalExpense = tableExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
+                    LekkaSummary(lekka.id, totalIncome, totalExpense)
                 }
-                summaryFlow.map { summary ->
-                    LekkaWithSummary(lekka, summary)
-                }
-            }) { it.toList() }
+                LekkaWithSummary(lekka, summary)
+            }
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val expenses: StateFlow<List<ExpenseWithCategoryAndLekka>> = combine(_selectedLekkaId, allLekkas) { id, lekkas ->
-        Pair(id, lekkas)
-    }.flatMapLatest { (id, lekkas) ->
+    val expenses: StateFlow<List<ExpenseWithCategoryAndLekka>> = combine(
+        _selectedLekkaId,
+        allLekkas,
+        selectedCycle
+    ) { id, lekkas, cycle ->
+        Triple(id, lekkas, cycle)
+    }.flatMapLatest { (id, lekkas, cycle) ->
         if (id == null) {
             flowOf(emptyList())
         } else {
             val selected = lekkas.find { it.id == id }
-            if (selected?.isMotherTable == true) {
+            val flow = if (selected?.isMotherTable == true) {
                 repository.getAllExpensesWithCategoryAndLekka()
             } else {
                 repository.getExpensesWithCategoryAndLekka(id)
+            }
+            flow.map { list ->
+                list.filter { item ->
+                    val date = item.expense.date
+                    !date.isBefore(cycle.startDate) && !date.isAfter(cycle.endDate)
+                }
             }
         }
     }.stateIn(
@@ -535,12 +601,13 @@ class ExpenseViewModel(
 
 class ExpenseViewModelFactory(
     private val repository: AppRepository,
+    private val userPreferences: UserPreferences = UserPreferences(null),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ExpenseViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ExpenseViewModel(repository, ioDispatcher) as T
+            return ExpenseViewModel(repository, userPreferences, ioDispatcher) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

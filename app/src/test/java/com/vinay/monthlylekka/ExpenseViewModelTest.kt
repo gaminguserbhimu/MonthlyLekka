@@ -13,6 +13,7 @@ import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.LekkaDao
 import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.MonthlySummary
+import com.vinay.monthlylekka.data.getMonthlyCycleForDate
 import com.vinay.monthlylekka.ui.viewmodel.ExpenseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -700,5 +702,63 @@ class ExpenseViewModelTest {
         assertEquals(1, expenses.size)
         assertEquals("Shoes", expenses.first().expense.description)
         assertEquals(1999.0, expenses.first().expense.amount, 0.01)
+    }
+
+    @Test
+    fun updateMonthStartDay_updatesPreferenceAndSelectedCycle() = runTest {
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val fakeLekkaDao = FakeLekkaDao()
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        assertEquals(1, viewModel.monthStartDay.value)
+
+        viewModel.updateMonthStartDay(5)
+        advanceUntilIdle()
+
+        assertEquals(5, viewModel.monthStartDay.value)
+        val cycle = viewModel.selectedCycle.value
+        assertEquals(5, cycle.startDate.dayOfMonth)
+    }
+
+    @Test
+    fun selectCycle_filtersExpensesAccordingToSelectedCycle() = runTest {
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val fakeLekkaDao = FakeLekkaDao()
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.expenses.collect {}
+        }
+
+        advanceUntilIdle()
+
+        val childLekka = fakeLekkaDao.getAllLekkas().first().find { !it.isMotherTable }!!
+        viewModel.selectLekka(childLekka.id)
+
+        val cat = Category(id = 1, lekkaId = childLekka.id, name = "Food", colorHex = "#FF0000", isIncome = false)
+        val currentMonthExpense = Expense(id = 1, lekkaId = childLekka.id, description = "Current", amount = 100.0, categoryId = 1, date = LocalDate.now())
+        val pastMonthExpense = Expense(id = 2, lekkaId = childLekka.id, description = "Past", amount = 200.0, categoryId = 1, date = LocalDate.now().minusMonths(2))
+
+        fakeExpenseDao.expenses.value = listOf(
+            ExpenseWithCategoryAndLekka(currentMonthExpense, cat, childLekka.name),
+            ExpenseWithCategoryAndLekka(pastMonthExpense, cat, childLekka.name)
+        )
+        advanceUntilIdle()
+
+        // By default current cycle is active, should only show current month expense
+        assertEquals(1, viewModel.expenses.value.size)
+        assertEquals("Current", viewModel.expenses.value.first().expense.description)
+
+        // Select cycle corresponding to past month expense
+        val pastCycle = getMonthlyCycleForDate(LocalDate.now().minusMonths(2), 1)
+        viewModel.selectCycle(pastCycle)
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.expenses.value.size)
+        assertEquals("Past", viewModel.expenses.value.first().expense.description)
     }
 }

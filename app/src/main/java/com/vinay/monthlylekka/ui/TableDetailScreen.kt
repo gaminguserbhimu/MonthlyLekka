@@ -44,6 +44,7 @@ import com.vinay.monthlylekka.data.Category
 import com.vinay.monthlylekka.data.Expense
 import com.vinay.monthlylekka.data.ExpenseWithCategoryAndLekka
 import com.vinay.monthlylekka.data.Lekka
+import com.vinay.monthlylekka.data.MonthlyCycle
 import com.vinay.monthlylekka.data.MonthlySummary
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 import java.time.LocalDate
@@ -81,6 +82,9 @@ fun TableDetailScreen(
     onDeleteExpense: (ExpenseWithCategoryAndLekka) -> Unit,
     onDeleteExpenses: ((List<ExpenseWithCategoryAndLekka>) -> Unit)? = null,
     onManageCategoriesClick: () -> Unit = {},
+    selectedCycle: MonthlyCycle? = null,
+    pastCycles: List<MonthlyCycle> = emptyList(),
+    onSelectCycle: (MonthlyCycle) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -246,6 +250,85 @@ fun TableDetailScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // Active Cycle Selector Dropdown
+            var cycleDropdownExpanded by remember { mutableStateOf(false) }
+
+            if (selectedCycle != null && pastCycles.isNotEmpty()) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            onClick = { cycleDropdownExpanded = true },
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "📅 Active Cycle: ${selectedCycle.label}",
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Rounded.ArrowDropDown,
+                                    contentDescription = "Select Cycle"
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = cycleDropdownExpanded,
+                            onDismissRequest = { cycleDropdownExpanded = false },
+                            modifier = Modifier.widthIn(min = 220.dp)
+                        ) {
+                            Text(
+                                text = "Select Monthly Cycle",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                            HorizontalDivider()
+                            pastCycles.forEach { cycle ->
+                                val isSelected = (cycle.startDate == selectedCycle.startDate && cycle.endDate == selectedCycle.endDate)
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = cycle.label,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    },
+                                    trailingIcon = {
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Check,
+                                                contentDescription = "Selected",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        cycleDropdownExpanded = false
+                                        onSelectCycle(cycle)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             ScrollableTabRow(
                 selectedTabIndex = pagerState.currentPage,
                 edgePadding = 16.dp,
@@ -339,136 +422,140 @@ fun TransactionsSlide(
     onDeleteExpense: (ExpenseWithCategoryAndLekka) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (expenses.isEmpty()) {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.outline
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "No transactions recorded yet.",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Click the '+' button below to add your first expense.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-        }
-        return
-    }
-
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    Column(
+        modifier = modifier.fillMaxSize()
     ) {
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)),
-                shape = RoundedCornerShape(16.dp)
+        // Top Summary Bar Card (Fixed/Sticky at the top)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                val totalIncome = remember(expenses) {
+                    expenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
+                }
+                val totalOutcome = remember(expenses) {
+                    expenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
+                }
+                val netBalance = totalIncome - totalOutcome
+                val isPositive = netBalance >= 0
+                val absBalanceStr = abs(netBalance).toCurrencyString()
+                val resultText = if (isPositive) "+ $absBalanceStr" else "- $absBalanceStr"
+                val netColor = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
+
+                // Left Side: Transaction Count with Logo
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
+                        contentDescription = "Transaction Count",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = if (isSelectionMode) "${selectedExpenseIds.size} Selected" else "${expenses.size}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+
+                // Right Side: Explicit Calculation Formula (Income - Outcome = Result)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val totalIncome = remember(expenses) {
-                        expenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
-                    }
-                    val totalOutcome = remember(expenses) {
-                        expenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
-                    }
-                    val netBalance = totalIncome - totalOutcome
-                    val isPositive = netBalance >= 0
-                    val absBalanceStr = abs(netBalance).toCurrencyString()
-                    val resultText = if (isPositive) "+ $absBalanceStr" else "- $absBalanceStr"
-                    val netColor = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
-
-                    // Left Side: Transaction Count with Logo
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
-                            contentDescription = "Transaction Count",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = if (isSelectionMode) "${selectedExpenseIds.size} Selected" else "${expenses.size}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-
-                    // Right Side: Explicit Calculation Formula (Income - Outcome = Result)
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = totalIncome.toCurrencyString(),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF10B981)
-                        )
-                        Text(
-                            text = "-",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Text(
-                            text = totalOutcome.toCurrencyString(),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFEF4444)
-                        )
-                        Text(
-                            text = "=",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Text(
-                            text = resultText,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = netColor
-                        )
-                    }
+                    Text(
+                        text = totalIncome.toCurrencyString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF10B981)
+                    )
+                    Text(
+                        text = "-",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        text = totalOutcome.toCurrencyString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFEF4444)
+                    )
+                    Text(
+                        text = "=",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        text = resultText,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = netColor
+                    )
                 }
             }
         }
 
-        items(expenses, key = { it.expense.id }) { item ->
-            TransactionRowFormatted(
-                item = item,
-                isMotherTable = isMotherTable,
-                isSelectionMode = isSelectionMode,
-                isSelected = selectedExpenseIds.contains(item.expense.id),
-                onToggleSelect = { onToggleSelect(item.expense.id) },
-                onLongPressSelect = { onLongPressSelect(item.expense.id) },
-                onClick = { onExpenseClick(item) },
-                onDelete = { onDeleteExpense(item) }
-            )
+        if (expenses.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.outline
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No transactions recorded yet.",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Click the '+' button below to add your first expense.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(expenses, key = { it.expense.id }) { item ->
+                    TransactionRowFormatted(
+                        item = item,
+                        isMotherTable = isMotherTable,
+                        isSelectionMode = isSelectionMode,
+                        isSelected = selectedExpenseIds.contains(item.expense.id),
+                        onToggleSelect = { onToggleSelect(item.expense.id) },
+                        onLongPressSelect = { onLongPressSelect(item.expense.id) },
+                        onClick = { onExpenseClick(item) },
+                        onDelete = { onDeleteExpense(item) }
+                    )
+                }
+            }
         }
     }
 }

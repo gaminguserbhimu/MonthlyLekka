@@ -32,9 +32,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.rounded.AddCircleOutline
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.RemoveCircleOutline
 import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.LekkaWithSummary
+import com.vinay.monthlylekka.data.MonthlyCycle
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,11 +53,15 @@ fun WelcomeScreen(
     onManageAllTablesClick: () -> Unit,
     modifier: Modifier = Modifier,
     motherTableSummary: LekkaSummary? = null,
+    selectedCycle: MonthlyCycle? = null,
+    monthStartDay: Int = 1,
+    onUpdateMonthStartDay: (Int) -> Unit = {},
     onTableClick: (Long) -> Unit = onSeeQuickNotesClick,
     onHelpClick: () -> Unit = {}
 ) {
     var showSelectChildDialogForQuickAdd by remember { mutableStateOf(false) }
     var dropdownExpanded by remember { mutableStateOf(false) }
+    var showStartDayDialog by remember { mutableStateOf(false) }
 
     val configuration = LocalConfiguration.current
     val isLargeScreen = configuration.screenWidthDp > 600
@@ -100,6 +108,34 @@ fun WelcomeScreen(
                 isLargeScreen = isLargeScreen,
                 onHelpClick = onHelpClick
             )
+
+            // Current Cycle Badge
+            val cycleLabel = selectedCycle?.label ?: "Sep 1 - Sep 30, 2026"
+            Surface(
+                onClick = { showStartDayDialog = true },
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "📅 Cycle: $cycleLabel",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Rounded.Edit,
+                        contentDescription = "Edit Month Start Day",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
 
             // 2. Master Summary Card (Master Expense Table)
             val masterLekkaId = masterLekkaWithSummary?.lekka?.id
@@ -380,6 +416,77 @@ fun WelcomeScreen(
             onChildTableSelected = { selectedChildId: Long ->
                 showSelectChildDialogForQuickAdd = false
                 onQuickAddClick(selectedChildId)
+            }
+        )
+    }
+
+    if (showStartDayDialog) {
+        var tempDay by remember { mutableIntStateOf(monthStartDay) }
+
+        fun getOrdinal(day: Int): String {
+            val suffix = when {
+                day in 11..13 -> "th"
+                day % 10 == 1 -> "st"
+                day % 10 == 2 -> "nd"
+                day % 10 == 3 -> "rd"
+                else -> "th"
+            }
+            return "$day$suffix"
+        }
+
+        AlertDialog(
+            onDismissRequest = { showStartDayDialog = false },
+            title = {
+                Text(
+                    text = "📅 Cycle Start Day: ${getOrdinal(tempDay)}",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Select the day of the month (1 to 28) when your monthly financial cycle begins.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        IconButton(
+                            onClick = { if (tempDay > 1) tempDay-- },
+                            enabled = tempDay > 1
+                        ) {
+                            Icon(Icons.Rounded.RemoveCircleOutline, contentDescription = "Decrease")
+                        }
+                        Text(
+                            text = "$tempDay",
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        IconButton(
+                            onClick = { if (tempDay < 28) tempDay++ },
+                            enabled = tempDay < 28
+                        ) {
+                            Icon(Icons.Rounded.AddCircleOutline, contentDescription = "Increase")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onUpdateMonthStartDay(tempDay)
+                    showStartDayDialog = false
+                }) {
+                    Text("Save", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showStartDayDialog = false }) {
+                    Text("Cancel")
+                }
             }
         )
     }

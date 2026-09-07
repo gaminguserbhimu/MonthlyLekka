@@ -53,8 +53,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             MonthlyLekkaTheme {
                 val context = LocalContext.current
+                val app = application as MonthlyLekkaApplication
                 val viewModel: ExpenseViewModel = viewModel(
-                    factory = ExpenseViewModelFactory((application as MonthlyLekkaApplication).repository)
+                    factory = ExpenseViewModelFactory(app.repository, app.userPreferences)
                 )
                 var backStack by rememberSaveable { mutableStateOf(listOf<Route>(Route.Welcome)) }
                 val startDestination by remember { startDestinationState }
@@ -63,6 +64,9 @@ class MainActivity : ComponentActivity() {
                 val isMotherTableSelected by viewModel.isMotherTableSelected.collectAsState()
                 val motherTableSummary by viewModel.motherTableSummary.collectAsState()
                 val mostRecentTable by viewModel.mostRecentTable.collectAsState()
+                val selectedCycle by viewModel.selectedCycle.collectAsState()
+                val monthStartDay by viewModel.monthStartDay.collectAsState()
+                val pastCycles by viewModel.pastCycles.collectAsState()
 
                 LaunchedEffect(startDestination, selectedLekkaId, mostRecentTable) {
                     if (startDestination == "add_expense") {
@@ -156,6 +160,9 @@ class MainActivity : ComponentActivity() {
                                         expenses = expenses,
                                         monthlySummaries = monthlySummaries,
                                         categories = categories,
+                                        selectedCycle = selectedCycle,
+                                        pastCycles = pastCycles,
+                                        onSelectCycle = viewModel::selectCycle,
                                         onBack = {
                                             backStack = backStack.filterIsInstance<Route.Welcome>()
                                         },
@@ -271,6 +278,9 @@ class MainActivity : ComponentActivity() {
                                         selectedLekkaId = selectedLekkaId,
                                         mostRecentTable = mostRecentTable,
                                         motherTableSummary = motherTableSummary,
+                                        selectedCycle = selectedCycle,
+                                        monthStartDay = monthStartDay,
+                                        onUpdateMonthStartDay = viewModel::updateMonthStartDay,
                                         onLekkaSelected = viewModel::selectLekka,
                                         onQuickAddClick = { targetId ->
                                             viewModel.selectLekka(targetId)
@@ -328,6 +338,9 @@ class MainActivity : ComponentActivity() {
                                         expenses = expenses,
                                         monthlySummaries = monthlySummaries,
                                         categories = categories,
+                                        selectedCycle = selectedCycle,
+                                        pastCycles = pastCycles,
+                                        onSelectCycle = viewModel::selectCycle,
                                         onBack = {
                                             if (backStack.size > 1) backStack = backStack.dropLast(1)
                                         },
@@ -356,6 +369,9 @@ class MainActivity : ComponentActivity() {
                                         expenses = expenses,
                                         monthlySummaries = monthlySummaries,
                                         categories = categories,
+                                        selectedCycle = selectedCycle,
+                                        pastCycles = pastCycles,
+                                        onSelectCycle = viewModel::selectCycle,
                                         onBack = {
                                             if (backStack.size > 1) backStack = backStack.dropLast(1)
                                         },
