@@ -2,9 +2,25 @@ package com.vinay.monthlylekka
 
 import com.vinay.monthlylekka.data.UserPreferences
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UserPreferencesTest {
+
+    @Test
+    fun userPreferences_defaultIsFirstLaunchIsTrue() {
+        val userPrefs = UserPreferences(context = null)
+        assertTrue(userPrefs.isFirstLaunch)
+    }
+
+    @Test
+    fun setFirstLaunchCompleted_updatesIsFirstLaunchToFalse() {
+        val userPrefs = UserPreferences(context = null)
+        assertTrue(userPrefs.isFirstLaunch)
+        userPrefs.setFirstLaunchCompleted()
+        assertFalse(userPrefs.isFirstLaunch)
+    }
 
     @Test
     fun userPreferences_defaultMonthStartDayIs1() {

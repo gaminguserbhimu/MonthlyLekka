@@ -13,3 +13,14 @@ fun HelpNavDestination(
         modifier = modifier
     )
 }
+
+@Composable
+fun OnboardingNavDestination(
+    onComplete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OnboardingScreen(
+        onComplete = onComplete,
+        modifier = modifier
+    )
+}

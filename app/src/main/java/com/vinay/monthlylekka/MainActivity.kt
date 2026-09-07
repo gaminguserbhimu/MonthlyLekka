@@ -32,6 +32,7 @@ import com.vinay.monthlylekka.ui.AddExpenseScreen
 import com.vinay.monthlylekka.ui.AnalyticsScreen
 import com.vinay.monthlylekka.ui.CategoryManagementScreen
 import com.vinay.monthlylekka.ui.HelpScreen
+import com.vinay.monthlylekka.ui.OnboardingScreen
 import com.vinay.monthlylekka.ui.Route
 import com.vinay.monthlylekka.ui.TableDetailScreen
 import com.vinay.monthlylekka.ui.TablesScreen
@@ -57,7 +58,10 @@ class MainActivity : ComponentActivity() {
                 val viewModel: ExpenseViewModel = viewModel(
                     factory = ExpenseViewModelFactory(app.repository, app.userPreferences)
                 )
-                var backStack by rememberSaveable { mutableStateOf(listOf<Route>(Route.Welcome)) }
+                val initialRoute = remember {
+                    if (app.userPreferences.isFirstLaunch) Route.Onboarding else Route.Welcome
+                }
+                var backStack by rememberSaveable { mutableStateOf(listOf<Route>(initialRoute)) }
                 val startDestination by remember { startDestinationState }
                 val allLekkasWithSummary by viewModel.allLekkasWithSummary.collectAsState()
                 val selectedLekkaId by viewModel.selectedLekkaId.collectAsState()
@@ -114,11 +118,11 @@ class MainActivity : ComponentActivity() {
                         is Route.Dashboard -> navigator.navigateTo(ListDetailPaneScaffoldRole.List)
                         is Route.TableDetail -> navigator.navigateTo(ListDetailPaneScaffoldRole.List)
                         is Route.Tables -> navigator.navigateTo(ListDetailPaneScaffoldRole.List)
-                        is Route.Welcome -> { /* Full screen */ }
+                        is Route.Welcome, is Route.Onboarding -> { /* Full screen */ }
                     }
                 }
 
-                if (navigator.scaffoldDirective.maxHorizontalPartitions > 1 && backStack.last() !is Route.Welcome) {
+                if (navigator.scaffoldDirective.maxHorizontalPartitions > 1 && backStack.last() !is Route.Welcome && backStack.last() !is Route.Onboarding) {
                     ListDetailPaneScaffold(
                         directive = navigator.scaffoldDirective,
                         value = navigator.scaffoldValue,
@@ -241,6 +245,9 @@ class MainActivity : ComponentActivity() {
                                             onBack = {
                                                 backStack = backStack.filterNot { it is Route.Help }
                                             },
+                                            onOpenTutorial = {
+                                                backStack = backStack + Route.Onboarding
+                                            },
                                             onExportCsv = { uri -> viewModel.exportCsvToUri(context, uri) },
                                             onExportBackup = { uri -> viewModel.exportBackupToUri(context, uri) },
                                             onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) }
@@ -299,6 +306,9 @@ class MainActivity : ComponentActivity() {
                                         },
                                         onHelpClick = {
                                             backStack = backStack + Route.Help
+                                        },
+                                        onTutorialClick = {
+                                            backStack = backStack + Route.Onboarding
                                         }
                                     )
                                 }
@@ -438,9 +448,24 @@ class MainActivity : ComponentActivity() {
                                         onBack = {
                                             if (backStack.size > 1) backStack = backStack.dropLast(1)
                                         },
+                                        onOpenTutorial = {
+                                            backStack = backStack + Route.Onboarding
+                                        },
                                         onExportCsv = { uri -> viewModel.exportCsvToUri(context, uri) },
                                         onExportBackup = { uri -> viewModel.exportBackupToUri(context, uri) },
                                         onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) }
+                                    )
+                                }
+                                is Route.Onboarding -> NavEntry(key) {
+                                    OnboardingScreen(
+                                        onComplete = {
+                                            viewModel.setFirstLaunchCompleted()
+                                            if (backStack.size > 1) {
+                                                backStack = backStack.filterNot { it is Route.Onboarding }
+                                            } else {
+                                                backStack = listOf(Route.Welcome)
+                                            }
+                                        }
                                     )
                                 }
                             }

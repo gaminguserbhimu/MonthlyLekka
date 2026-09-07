@@ -48,6 +48,13 @@ class ExpenseViewModel(
 
     val monthStartDay: StateFlow<Int> = userPreferences.monthStartDay
 
+    val isFirstLaunch: Boolean
+        get() = userPreferences.isFirstLaunch
+
+    fun setFirstLaunchCompleted() {
+        userPreferences.setFirstLaunchCompleted()
+    }
+
     private val _selectedCycle = MutableStateFlow(
         getMonthlyCycleForDate(LocalDate.now(), monthStartDay.value)
     )

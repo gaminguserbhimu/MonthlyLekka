@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.TableChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -58,7 +59,8 @@ fun WelcomeScreen(
     monthStartDay: Int = 1,
     onUpdateMonthStartDay: (Int) -> Unit = {},
     onTableClick: (Long) -> Unit = onSeeQuickNotesClick,
-    onHelpClick: () -> Unit = {}
+    onHelpClick: () -> Unit = {},
+    onTutorialClick: () -> Unit = {}
 ) {
     var showSelectChildDialogForQuickAdd by remember { mutableStateOf(false) }
     var dropdownExpanded by remember { mutableStateOf(false) }
@@ -104,10 +106,11 @@ fun WelcomeScreen(
             verticalArrangement = Arrangement.spacedBy(verticalSpacing),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 1. Header (Logo, Monthly Expenses, Help Button)
+            // 1. Header (Logo, Monthly Expenses, Help Button, Tutorial Walkthrough)
             BrandedHeader(
                 isLargeScreen = isLargeScreen,
-                onHelpClick = onHelpClick
+                onHelpClick = onHelpClick,
+                onTutorialClick = onTutorialClick
             )
 
             // Current Cycle Badge
@@ -608,7 +611,8 @@ fun RecentTableCard(
 @Composable
 fun BrandedHeader(
     isLargeScreen: Boolean = false,
-    onHelpClick: () -> Unit = {}
+    onHelpClick: () -> Unit = {},
+    onTutorialClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -659,12 +663,23 @@ fun BrandedHeader(
             )
         }
 
-        IconButton(onClick = onHelpClick) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.HelpOutline,
-                contentDescription = "Help & Guide",
-                tint = MaterialTheme.colorScheme.primary
-            )
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onTutorialClick) {
+                Icon(
+                    imageVector = Icons.Rounded.School,
+                    contentDescription = "App Tutorial Walkthrough",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            IconButton(onClick = onHelpClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.HelpOutline,
+                    contentDescription = "Help & Guide",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
