@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
+import com.google.android.gms.ads.MobileAds
 import com.vinay.monthlylekka.ui.AddExpenseScreen
 import com.vinay.monthlylekka.ui.AnalyticsScreen
 import com.vinay.monthlylekka.ui.CategoryManagementScreen
@@ -49,6 +50,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        MobileAds.initialize(this) {}
         handleIntent(intent)
 
         setContent {
@@ -71,6 +73,7 @@ class MainActivity : ComponentActivity() {
                 val selectedCycle by viewModel.selectedCycle.collectAsState()
                 val monthStartDay by viewModel.monthStartDay.collectAsState()
                 val pastCycles by viewModel.pastCycles.collectAsState()
+                val currencySymbol by viewModel.currencySymbol.collectAsState()
 
                 LaunchedEffect(startDestination, selectedLekkaId, mostRecentTable) {
                     if (startDestination == "add_expense") {
@@ -150,7 +153,9 @@ class MainActivity : ComponentActivity() {
                                         onDeleteLekka = viewModel::deleteLekka,
                                         onExportCsv = { uri -> viewModel.exportCsvToUri(context, uri) },
                                         onExportBackup = { uri -> viewModel.exportBackupToUri(context, uri) },
-                                        onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) }
+                                        onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) },
+                                        currencySymbol = currencySymbol,
+                                        onUpdateCurrencySymbol = viewModel::updateCurrencySymbol
                                     )
                                 } else {
                                     val currentLekkaWithSummary = allLekkasWithSummary.find { it.lekka.id == selectedLekkaId }
@@ -250,7 +255,9 @@ class MainActivity : ComponentActivity() {
                                             },
                                             onExportCsv = { uri -> viewModel.exportCsvToUri(context, uri) },
                                             onExportBackup = { uri -> viewModel.exportBackupToUri(context, uri) },
-                                            onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) }
+                                            onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) },
+                                            currencySymbol = currencySymbol,
+                                            onUpdateCurrencySymbol = viewModel::updateCurrencySymbol
                                         )
                                     }
                                     else -> {
@@ -288,6 +295,8 @@ class MainActivity : ComponentActivity() {
                                         selectedCycle = selectedCycle,
                                         monthStartDay = monthStartDay,
                                         onUpdateMonthStartDay = viewModel::updateMonthStartDay,
+                                        currencySymbol = currencySymbol,
+                                        onUpdateCurrencySymbol = viewModel::updateCurrencySymbol,
                                         onLekkaSelected = viewModel::selectLekka,
                                         onQuickAddClick = { targetId ->
                                             viewModel.selectLekka(targetId)
@@ -333,7 +342,9 @@ class MainActivity : ComponentActivity() {
                                         onDeleteLekka = viewModel::deleteLekka,
                                         onExportCsv = { uri -> viewModel.exportCsvToUri(context, uri) },
                                         onExportBackup = { uri -> viewModel.exportBackupToUri(context, uri) },
-                                        onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) }
+                                        onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) },
+                                        currencySymbol = currencySymbol,
+                                        onUpdateCurrencySymbol = viewModel::updateCurrencySymbol
                                     )
                                 }
                                 is Route.TableDetail -> NavEntry(key) {
@@ -453,7 +464,9 @@ class MainActivity : ComponentActivity() {
                                         },
                                         onExportCsv = { uri -> viewModel.exportCsvToUri(context, uri) },
                                         onExportBackup = { uri -> viewModel.exportBackupToUri(context, uri) },
-                                        onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) }
+                                        onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) },
+                                        currencySymbol = currencySymbol,
+                                        onUpdateCurrencySymbol = viewModel::updateCurrencySymbol
                                     )
                                 }
                                 is Route.Onboarding -> NavEntry(key) {

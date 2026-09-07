@@ -45,4 +45,24 @@ class UserPreferencesTest {
         userPrefs.setMonthStartDay(31)
         assertEquals(28, userPrefs.getMonthStartDay())
     }
+
+    @Test
+    fun userPreferences_defaultCurrencySymbolIsRupee() {
+        val userPrefs = UserPreferences(context = null)
+        assertEquals("₹", userPrefs.currencySymbol)
+        assertEquals("₹", userPrefs.currencySymbolFlow.value)
+    }
+
+    @Test
+    fun updateCurrencySymbol_updatesValueAndTrims() {
+        val userPrefs = UserPreferences(context = null)
+
+        userPrefs.updateCurrencySymbol("$")
+        assertEquals("$", userPrefs.currencySymbol)
+        assertEquals("$", userPrefs.currencySymbolFlow.value)
+
+        // Empty string falls back to default
+        userPrefs.updateCurrencySymbol("   ")
+        assertEquals("₹", userPrefs.currencySymbol)
+    }
 }

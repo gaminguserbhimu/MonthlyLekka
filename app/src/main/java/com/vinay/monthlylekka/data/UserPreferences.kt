@@ -37,10 +37,26 @@ class UserPreferences(context: Context? = null) {
         _monthStartDay.value = validDay
     }
 
+    private val _currencySymbol = MutableStateFlow(
+        prefs?.getString(KEY_CURRENCY_SYMBOL, DEFAULT_CURRENCY_SYMBOL) ?: DEFAULT_CURRENCY_SYMBOL
+    )
+    val currencySymbolFlow: StateFlow<String> = _currencySymbol.asStateFlow()
+
+    val currencySymbol: String
+        get() = _currencySymbol.value
+
+    fun updateCurrencySymbol(symbol: String) {
+        val validSymbol = symbol.trim().ifEmpty { DEFAULT_CURRENCY_SYMBOL }
+        prefs?.edit()?.putString(KEY_CURRENCY_SYMBOL, validSymbol)?.apply()
+        _currencySymbol.value = validSymbol
+    }
+
     companion object {
         private const val KEY_IS_FIRST_LAUNCH = "is_first_launch"
         private const val KEY_MONTH_START_DAY = "month_start_day"
+        private const val KEY_CURRENCY_SYMBOL = "currency_symbol"
         const val DEFAULT_MONTH_START_DAY = 1
+        const val DEFAULT_CURRENCY_SYMBOL = "₹"
         const val MIN_DAY = 1
         const val MAX_DAY = 28
     }

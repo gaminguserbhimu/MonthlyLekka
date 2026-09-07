@@ -34,13 +34,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.rounded.AddCircleOutline
+import androidx.compose.material.icons.rounded.CurrencyExchange
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.PriceChange
 import androidx.compose.material.icons.rounded.RemoveCircleOutline
 import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.LekkaWithSummary
 import com.vinay.monthlylekka.data.MonthlyCycle
-import com.vinay.monthlylekka.ui.components.AmazonBannerAdView
+import com.vinay.monthlylekka.ui.components.BannerAdView
+import com.vinay.monthlylekka.ui.components.CurrencySettingDialog
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,6 +61,8 @@ fun WelcomeScreen(
     selectedCycle: MonthlyCycle? = null,
     monthStartDay: Int = 1,
     onUpdateMonthStartDay: (Int) -> Unit = {},
+    currencySymbol: String = "₹",
+    onUpdateCurrencySymbol: (String) -> Unit = {},
     onTableClick: (Long) -> Unit = onSeeQuickNotesClick,
     onHelpClick: () -> Unit = {},
     onTutorialClick: () -> Unit = {}
@@ -65,6 +70,7 @@ fun WelcomeScreen(
     var showSelectChildDialogForQuickAdd by remember { mutableStateOf(false) }
     var dropdownExpanded by remember { mutableStateOf(false) }
     var showStartDayDialog by remember { mutableStateOf(false) }
+    var showCurrencyDialog by remember { mutableStateOf(false) }
 
     val configuration = LocalConfiguration.current
     val isLargeScreen = configuration.screenWidthDp > 600
@@ -106,38 +112,70 @@ fun WelcomeScreen(
             verticalArrangement = Arrangement.spacedBy(verticalSpacing),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 1. Header (Logo, Monthly Expenses, Help Button, Tutorial Walkthrough)
+            // 1. Header (Logo, Monthly Expenses, Help Button, Currency, Tutorial Walkthrough)
             BrandedHeader(
                 isLargeScreen = isLargeScreen,
                 onHelpClick = onHelpClick,
-                onTutorialClick = onTutorialClick
+                onTutorialClick = onTutorialClick,
+                onCurrencyClick = { showCurrencyDialog = true }
             )
 
-            // Current Cycle Badge
+            // Current Cycle & Currency Badges
             val cycleLabel = selectedCycle?.label ?: "Sep 1 - Sep 30, 2026"
-            Surface(
-                onClick = { showStartDayDialog = true },
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                Surface(
+                    onClick = { showStartDayDialog = true },
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                 ) {
-                    Text(
-                        text = "📅 Cycle: $cycleLabel",
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.Rounded.Edit,
-                        contentDescription = "Edit Month Start Day",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "📅 Cycle: $cycleLabel",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Rounded.Edit,
+                            contentDescription = "Edit Month Start Day",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = { showCurrencyDialog = true },
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "💱 $currencySymbol",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Rounded.Edit,
+                            contentDescription = "Change Currency Symbol",
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
 
@@ -411,13 +449,24 @@ fun WelcomeScreen(
                 }
             }
 
-            // Amazon Banner Ad View at the bottom
-            AmazonBannerAdView(
+            // Google AdMob Banner Ad View at the bottom
+            BannerAdView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .widthIn(max = 700.dp)
             )
         }
+    }
+
+    if (showCurrencyDialog) {
+        CurrencySettingDialog(
+            currentSymbol = currencySymbol,
+            onDismiss = { showCurrencyDialog = false },
+            onConfirm = { newSymbol ->
+                onUpdateCurrencySymbol(newSymbol)
+                showCurrencyDialog = false
+            }
+        )
     }
 
     if (showSelectChildDialogForQuickAdd) {
@@ -612,7 +661,8 @@ fun RecentTableCard(
 fun BrandedHeader(
     isLargeScreen: Boolean = false,
     onHelpClick: () -> Unit = {},
-    onTutorialClick: () -> Unit = {}
+    onTutorialClick: () -> Unit = {},
+    onCurrencyClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -666,6 +716,13 @@ fun BrandedHeader(
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onCurrencyClick) {
+                Icon(
+                    imageVector = Icons.Rounded.PriceChange,
+                    contentDescription = "Currency Symbol Settings",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
             IconButton(onClick = onTutorialClick) {
                 Icon(
                     imageVector = Icons.Rounded.School,

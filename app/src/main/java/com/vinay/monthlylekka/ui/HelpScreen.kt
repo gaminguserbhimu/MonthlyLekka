@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.PieChart
+import androidx.compose.material.icons.rounded.PriceChange
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Stars
 import androidx.compose.material.icons.rounded.Swipe
@@ -44,6 +45,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.vinay.monthlylekka.ui.components.CurrencySettingDialog
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,8 +69,11 @@ fun HelpScreen(
     onOpenTutorial: () -> Unit = {},
     onExportCsv: (Uri) -> Unit = {},
     onExportBackup: (Uri) -> Unit = {},
-    onImportBackup: (Uri) -> Unit = {}
+    onImportBackup: (Uri) -> Unit = {},
+    currencySymbol: String = "₹",
+    onUpdateCurrencySymbol: (String) -> Unit = {}
 ) {
+    var showCurrencyDialog by remember { mutableStateOf(false) }
     val exportCsvLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
     ) { uri: Uri? ->
@@ -97,6 +106,15 @@ fun HelpScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showCurrencyDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Rounded.PriceChange,
+                            contentDescription = "Currency Symbol Settings ($currencySymbol)",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 },
@@ -155,6 +173,60 @@ fun HelpScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                }
+            }
+
+            // Currency Symbol Customization Card
+            Card(
+                onClick = { showCurrencyDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = currencySymbol,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSecondary
+                                )
+                            }
+                        }
+                        Column {
+                            Text(
+                                text = "Currency Symbol: $currencySymbol",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Text(
+                                text = "Tap to choose currency symbol (₹, $, €, £, ¥, custom)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
                 }
             }
 
@@ -375,6 +447,17 @@ fun HelpScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+
+    if (showCurrencyDialog) {
+        CurrencySettingDialog(
+            currentSymbol = currencySymbol,
+            onDismiss = { showCurrencyDialog = false },
+            onConfirm = { newSymbol ->
+                onUpdateCurrencySymbol(newSymbol)
+                showCurrencyDialog = false
+            }
+        )
     }
 }
 

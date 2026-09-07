@@ -3,16 +3,20 @@ package com.vinay.monthlylekka.ui
 import kotlin.math.abs
 import kotlin.math.round
 
+object CurrencyUtils {
+    var activeCurrencySymbol: String = "₹"
+}
+
 /**
  * Standardized Currency Formatter
- * Formats numbers with Indian-style comma grouping and '₹' prefix.
- * Examples:
+ * Formats numbers with comma grouping and active currency symbol prefix.
+ * Examples (with symbol '₹'):
  *   150000.0 -> "₹ 1,50,000"
  *   5000.0   -> "₹ 5,000"
  *   0.0      -> "₹ 0"
  *  -5000.0   -> "-₹ 5,000"
  */
-fun Double.toCurrencyString(): String {
+fun Double.toCurrencyString(symbol: String = CurrencyUtils.activeCurrencySymbol): String {
     val isNegative = this < 0
     val absVal = abs(this)
     val longPart = absVal.toLong()
@@ -36,9 +40,9 @@ fun Double.toCurrencyString(): String {
     }
 
     val sign = if (isNegative) "-" else ""
-    return "$sign₹ $formattedNum"
+    return "$sign$symbol $formattedNum"
 }
 
-fun Float.toCurrencyString(): String = this.toDouble().toCurrencyString()
-fun Int.toCurrencyString(): String = this.toDouble().toCurrencyString()
-fun Long.toCurrencyString(): String = this.toDouble().toCurrencyString()
+fun Float.toCurrencyString(symbol: String = CurrencyUtils.activeCurrencySymbol): String = this.toDouble().toCurrencyString(symbol)
+fun Int.toCurrencyString(symbol: String = CurrencyUtils.activeCurrencySymbol): String = this.toDouble().toCurrencyString(symbol)
+fun Long.toCurrencyString(symbol: String = CurrencyUtils.activeCurrencySymbol): String = this.toDouble().toCurrencyString(symbol)

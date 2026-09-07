@@ -18,6 +18,7 @@ import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
+import androidx.compose.material.icons.rounded.PriceChange
 import androidx.compose.material.icons.rounded.SaveAlt
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
@@ -37,7 +38,8 @@ import com.vinay.monthlylekka.data.CategorySpec
 import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.LekkaWithSummary
-import com.vinay.monthlylekka.ui.components.AmazonBannerAdView
+import com.vinay.monthlylekka.ui.components.BannerAdView
+import com.vinay.monthlylekka.ui.components.CurrencySettingDialog
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,11 +56,14 @@ fun TablesScreen(
     onExportCsv: (Uri) -> Unit = {},
     onExportBackup: (Uri) -> Unit = {},
     onImportBackup: (Uri) -> Unit = {},
+    currencySymbol: String = "₹",
+    onUpdateCurrencySymbol: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showCreateDialog by remember { mutableStateOf(false) }
     var lekkaToEdit by remember { mutableStateOf<Lekka?>(null) }
     var showDeleteConfirm by remember { mutableStateOf<Lekka?>(null) }
+    var showCurrencyDialog by remember { mutableStateOf(false) }
 
     val exportCsvLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
@@ -104,6 +109,13 @@ fun TablesScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showCurrencyDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Rounded.PriceChange,
+                            contentDescription = "Currency Symbol Settings ($currencySymbol)",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     Button(
                         onClick = { showCreateDialog = true },
                         colors = ButtonDefaults.buttonColors(
@@ -242,17 +254,28 @@ fun TablesScreen(
                 }
             }
 
-            // Section 4: Amazon Banner Ad
+            // Section 4: Google AdMob Banner Ad
             item {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .widthIn(max = 700.dp)
                 ) {
-                    AmazonBannerAdView(modifier = Modifier.fillMaxWidth())
+                    BannerAdView(modifier = Modifier.fillMaxWidth())
                 }
             }
         }
+    }
+
+    if (showCurrencyDialog) {
+        CurrencySettingDialog(
+            currentSymbol = currencySymbol,
+            onDismiss = { showCurrencyDialog = false },
+            onConfirm = { newSymbol ->
+                onUpdateCurrencySymbol(newSymbol)
+                showCurrencyDialog = false
+            }
+        )
     }
 
     if (showCreateDialog) {

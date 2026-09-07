@@ -21,6 +21,7 @@ import com.vinay.monthlylekka.data.MonthlySummary
 import com.vinay.monthlylekka.data.UserPreferences
 import com.vinay.monthlylekka.data.getMonthlyCycleForDate
 import com.vinay.monthlylekka.data.getPastMonthlyCycles
+import com.vinay.monthlylekka.ui.CurrencyUtils
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,6 +48,13 @@ class ExpenseViewModel(
 ) : ViewModel() {
 
     val monthStartDay: StateFlow<Int> = userPreferences.monthStartDay
+
+    val currencySymbol: StateFlow<String> = userPreferences.currencySymbolFlow
+
+    fun updateCurrencySymbol(symbol: String) {
+        userPreferences.updateCurrencySymbol(symbol)
+        CurrencyUtils.activeCurrencySymbol = userPreferences.currencySymbol
+    }
 
     val isFirstLaunch: Boolean
         get() = userPreferences.isFirstLaunch
@@ -309,6 +317,7 @@ class ExpenseViewModel(
     )
 
     init {
+        CurrencyUtils.activeCurrencySymbol = userPreferences.currencySymbol
         viewModelScope.launch(ioDispatcher) {
             repository.updateMotherTableName()
             allLekkas.collect { lekkas ->

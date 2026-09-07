@@ -46,7 +46,7 @@ import com.vinay.monthlylekka.data.ExpenseWithCategoryAndLekka
 import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.MonthlyCycle
 import com.vinay.monthlylekka.data.MonthlySummary
-import com.vinay.monthlylekka.ui.components.AmazonBannerAdView
+import com.vinay.monthlylekka.ui.components.BannerAdView
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 import java.time.LocalDate
 import java.time.YearMonth
@@ -241,7 +241,8 @@ fun TableDetailScreen(
                         )
                     },
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(bottom = 60.dp)
                 )
             }
         }
@@ -393,8 +394,8 @@ fun TableDetailScreen(
                 }
             }
 
-            // Amazon Banner Ad View anchored at screen bottom
-            AmazonBannerAdView(modifier = Modifier.fillMaxWidth())
+            // Google AdMob Banner Ad View anchored at screen bottom
+            BannerAdView(modifier = Modifier.fillMaxWidth())
         }
     }
 
@@ -544,7 +545,7 @@ fun TransactionsSlide(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(expenses, key = { it.expense.id }) { item ->

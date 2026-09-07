@@ -1,5 +1,6 @@
 package com.vinay.monthlylekka
 
+import com.vinay.monthlylekka.ui.CurrencyUtils
 import com.vinay.monthlylekka.ui.toCurrencyString
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -23,5 +24,25 @@ class CurrencyUtilsTest {
     @Test
     fun toCurrencyString_formatsDecimalsWhenPresent() {
         assertEquals("₹ 1,50,000.50", 150000.50.toCurrencyString())
+    }
+
+    @Test
+    fun toCurrencyString_formatsWithCustomActiveCurrencySymbol() {
+        try {
+            CurrencyUtils.activeCurrencySymbol = "$"
+            assertEquals("$ 1,50,000", 150000.0.toCurrencyString())
+            assertEquals("-$ 5,000", (-5000.0).toCurrencyString())
+
+            CurrencyUtils.activeCurrencySymbol = "€"
+            assertEquals("€ 5,000", 5000.0.toCurrencyString())
+
+            CurrencyUtils.activeCurrencySymbol = "£"
+            assertEquals("£ 100", 100.0.toCurrencyString())
+
+            CurrencyUtils.activeCurrencySymbol = "¥"
+            assertEquals("¥ 500", 500.0.toCurrencyString())
+        } finally {
+            CurrencyUtils.activeCurrencySymbol = "₹"
+        }
     }
 }
