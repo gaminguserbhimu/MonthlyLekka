@@ -1,5 +1,7 @@
 package com.vinay.monthlylekka.ui
 
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,7 +36,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.rounded.AddCircleOutline
-import androidx.compose.material.icons.rounded.CurrencyExchange
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.PriceChange
 import androidx.compose.material.icons.rounded.RemoveCircleOutline
@@ -112,16 +113,18 @@ fun WelcomeScreen(
             verticalArrangement = Arrangement.spacedBy(verticalSpacing),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 1. Header (Logo, Monthly Expenses, Help Button, Currency, Tutorial Walkthrough)
+            // 1. Header (Logo, Monthly Expenses, Help Button, Tutorial Walkthrough)
             BrandedHeader(
                 isLargeScreen = isLargeScreen,
                 onHelpClick = onHelpClick,
-                onTutorialClick = onTutorialClick,
-                onCurrencyClick = { showCurrencyDialog = true }
+                onTutorialClick = onTutorialClick
             )
 
             // Current Cycle & Currency Badges
-            val cycleLabel = selectedCycle?.label ?: "Sep 1 - Sep 30, 2026"
+            val monthDayFormatter = remember { DateTimeFormatter.ofPattern("MMM d", Locale.US) }
+            val cycleShortLabel = selectedCycle?.let {
+                "${it.startDate.format(monthDayFormatter)} - ${it.endDate.format(monthDayFormatter)}"
+            } ?: "Sep 1 - Sep 30"
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -138,7 +141,7 @@ fun WelcomeScreen(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = "📅 Cycle: $cycleLabel",
+                            text = "📅 $cycleShortLabel",
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -164,7 +167,7 @@ fun WelcomeScreen(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = "💱 $currencySymbol",
+                            text = "💲 $currencySymbol",
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
@@ -661,8 +664,7 @@ fun RecentTableCard(
 fun BrandedHeader(
     isLargeScreen: Boolean = false,
     onHelpClick: () -> Unit = {},
-    onTutorialClick: () -> Unit = {},
-    onCurrencyClick: () -> Unit = {}
+    onTutorialClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -703,7 +705,7 @@ fun BrandedHeader(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "Smart Personal & Event Expense Manager",
+                text = "Smart Expense Manager",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
@@ -716,13 +718,6 @@ fun BrandedHeader(
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onCurrencyClick) {
-                Icon(
-                    imageVector = Icons.Rounded.PriceChange,
-                    contentDescription = "Currency Symbol Settings",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
             IconButton(onClick = onTutorialClick) {
                 Icon(
                     imageVector = Icons.Rounded.School,

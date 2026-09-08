@@ -173,7 +173,7 @@ fun TableDetailScreen(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = lekkaName,
+                                    text = if (isMotherTable) "Master Table" else lekkaName,
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.titleLarge,
                                     maxLines = 1,
@@ -198,7 +198,7 @@ fun TableDetailScreen(
                                 }
                             }
                             Text(
-                                text = if (isMotherTable) "Aggregated Overview across all expense tables" else "Expense Table Details & Analytics",
+                                text = if (isMotherTable) "Aggregated Overview" else "Expense Table Details & Analytics",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -636,15 +636,20 @@ fun PieChartsSlide(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Monthly Expense Distribution",
+                        text = "Expense Breakdown",
+                        modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     if (availableMonths.isNotEmpty()) {
                         MonthSelectorDropdown(
                             availableMonths = availableMonths,
                             selectedMonth = selectedMonth,
+                            modifier = Modifier.wrapContentWidth(),
                             onMonthSelected = { selectedMonth = it }
                         )
                     }
@@ -677,6 +682,7 @@ fun PieChartsSlide(
 fun MonthSelectorDropdown(
     availableMonths: List<String>,
     selectedMonth: String,
+    modifier: Modifier = Modifier,
     onMonthSelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -687,11 +693,19 @@ fun MonthSelectorDropdown(
         selectedMonth
     }
 
-    Box {
+    Box(modifier = modifier) {
         FilterChip(
             selected = true,
             onClick = { expanded = true },
-            label = { Text(formattedSelected, fontWeight = FontWeight.Bold) },
+            label = {
+                Text(
+                    text = formattedSelected,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
             trailingIcon = { Icon(Icons.Rounded.ArrowDropDown, contentDescription = null) },
             colors = FilterChipDefaults.filterChipColors(
                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -710,7 +724,14 @@ fun MonthSelectorDropdown(
                     month
                 }
                 DropdownMenuItem(
-                    text = { Text(label) },
+                    text = {
+                        Text(
+                            text = label,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
                     onClick = {
                         onMonthSelected(month)
                         expanded = false
