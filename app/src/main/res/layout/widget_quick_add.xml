@@ -5,28 +5,16 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:gravity="center"
-    android:orientation="horizontal"
+    android:orientation="vertical"
     android:padding="8dp"
     android:clickable="true"
     android:focusable="true">
 
     <ImageView
         android:id="@+id/widget_icon"
-        android:layout_width="22dp"
-        android:layout_height="22dp"
-        android:layout_marginEnd="8dp"
-        android:contentDescription="@string/wallet_icon_desc"
-        android:src="@drawable/ic_wallet" />
-
-    <TextView
-        android:id="@+id/widget_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/widget_quick_add_title"
-        android:textColor="#FFFFFFFF"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:singleLine="true"
-        android:ellipsize="end" />
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:contentDescription="@string/widget_quick_add_title"
+        android:src="@drawable/ic_quick_add_widget_icon" />
 
 </LinearLayout>
