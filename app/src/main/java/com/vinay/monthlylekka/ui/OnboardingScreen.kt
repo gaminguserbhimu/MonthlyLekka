@@ -24,6 +24,7 @@ import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.RocketLaunch
 import androidx.compose.material.icons.rounded.TableChart
 import androidx.compose.material3.Button
@@ -69,8 +70,8 @@ val onboardingSlides = listOf(
         badge = "SMART TRACKING",
         icon = Icons.Rounded.AccountBalanceWallet,
         highlights = listOf(
-            "Effortless transaction logging",
-            "Automatic category management & insights",
+            "Effortless transaction logging & analytics",
+            "Custom date range filtering for full clarity",
             "Complete data privacy with local backup & export"
         )
     ),
@@ -83,6 +84,17 @@ val onboardingSlides = listOf(
             "Central 👑 Master Table combines all transactions",
             "Dedicated tables for events, trips, and projects",
             "Set default logging tables with fast switching"
+        )
+    ),
+    OnboardingSlideData(
+        title = "Date Range Filter & Analytics",
+        description = "Filter transactions by custom From and To dates and analyze income, outcome, and net balance.",
+        badge = "FINANCIAL ANALYTICS",
+        icon = Icons.Rounded.DateRange,
+        highlights = listOf(
+            "Interactive From & To date range pickers",
+            "Real-time income, outcome & net balance calculation",
+            "Monthly & yearly category analytics breakdowns"
         )
     ),
     OnboardingSlideData(

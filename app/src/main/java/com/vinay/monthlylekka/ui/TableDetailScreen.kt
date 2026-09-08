@@ -48,8 +48,10 @@ import com.vinay.monthlylekka.data.MonthlyCycle
 import com.vinay.monthlylekka.data.MonthlySummary
 import com.vinay.monthlylekka.ui.components.BannerAdView
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.atan2
@@ -89,7 +91,7 @@ fun TableDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val pagerState = rememberPagerState(pageCount = { 4 })
+    val pagerState = rememberPagerState(pageCount = { 5 })
     var showSelectChildDialog by remember { mutableStateOf(false) }
 
     var isSelectionMode by remember { mutableStateOf(false) }
@@ -107,7 +109,8 @@ fun TableDetailScreen(
         "Transactions" to Icons.AutoMirrored.Rounded.List,
         "Pie Charts" to Icons.Rounded.PieChart,
         "Monthly Table" to Icons.Rounded.CalendarMonth,
-        "Yearly Charts" to Icons.Rounded.Analytics
+        "Yearly Charts" to Icons.Rounded.Analytics,
+        "Filter" to Icons.Rounded.DateRange
     )
 
     Scaffold(
@@ -390,6 +393,12 @@ fun TableDetailScreen(
                     3 -> YearlyChartsSlide(
                         expenses = expenses,
                         monthlySummaries = monthlySummaries
+                    )
+                    4 -> FilterTabSlide(
+                        expenses = expenses,
+                        isMotherTable = isMotherTable,
+                        onExpenseClick = onExpenseClick,
+                        onDeleteExpense = onDeleteExpense
                     )
                 }
             }
@@ -1761,6 +1770,321 @@ fun YearSelectorDropdown(
                         expanded = false
                     }
                 )
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SLIDE 5: CUSTOM DATE RANGE FILTER
+// ---------------------------------------------------------------------------
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FilterTabSlide(
+    expenses: List<ExpenseWithCategoryAndLekka>,
+    isMotherTable: Boolean,
+    onExpenseClick: (ExpenseWithCategoryAndLekka) -> Unit,
+    onDeleteExpense: (ExpenseWithCategoryAndLekka) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var fromDate by remember { mutableStateOf(LocalDate.now().minusDays(30)) }
+    var toDate by remember { mutableStateOf(LocalDate.now()) }
+
+    var showFromDatePicker by remember { mutableStateOf(false) }
+    var showToDatePicker by remember { mutableStateOf(false) }
+
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
+
+    if (showFromDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = fromDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showFromDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                        fromDate = selectedDate
+                        if (fromDate.isAfter(toDate)) {
+                            toDate = fromDate
+                        }
+                    }
+                    showFromDatePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFromDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showToDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = toDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showToDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                        toDate = selectedDate
+                        if (toDate.isBefore(fromDate)) {
+                            fromDate = toDate
+                        }
+                    }
+                    showToDatePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showToDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    val filteredExpenses = remember(expenses, fromDate, toDate) {
+        expenses.filter { item ->
+            val d = item.expense.date
+            !d.isBefore(fromDate) && !d.isAfter(toDate)
+        }
+    }
+
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+        // Date Selection Controls Header
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Select Custom Date Range",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // From Date Selector Card
+                    Surface(
+                        onClick = { showFromDatePicker = true },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = "From Date",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                )
+                                Text(
+                                    text = fromDate.format(dateFormatter),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Rounded.DateRange,
+                                contentDescription = "Select From Date",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    // To Date Selector Card
+                    Surface(
+                        onClick = { showToDatePicker = true },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = "To Date",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                )
+                                Text(
+                                    text = toDate.format(dateFormatter),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Rounded.DateRange,
+                                contentDescription = "Select To Date",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Summary Bar Card: Transaction Count & Income - Outcome = Result Formula
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val totalIncome = remember(filteredExpenses) {
+                    filteredExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
+                }
+                val totalOutcome = remember(filteredExpenses) {
+                    filteredExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
+                }
+                val netBalance = totalIncome - totalOutcome
+                val isPositive = netBalance >= 0
+                val absBalanceStr = abs(netBalance).toCurrencyString()
+                val resultText = if (isPositive) "+ $absBalanceStr" else "- $absBalanceStr"
+                val netColor = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
+
+                // Left Side: Transaction Count
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ReceiptLong,
+                        contentDescription = "Transaction Count",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "${filteredExpenses.size}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+
+                // Right Side: Income - Outcome = Net Balance Formula
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = totalIncome.toCurrencyString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF10B981)
+                    )
+                    Text(
+                        text = "-",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        text = totalOutcome.toCurrencyString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFEF4444)
+                    )
+                    Text(
+                        text = "=",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        text = resultText,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = netColor
+                    )
+                }
+            }
+        }
+
+        // Filtered Transactions List
+        if (filteredExpenses.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Rounded.DateRange,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.outline
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No transactions found in selected date range.",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Try adjusting the From Date or To Date above.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(filteredExpenses, key = { it.expense.id }) { item ->
+                    ExpenseItemCard(
+                        item = item,
+                        isMotherTable = isMotherTable,
+                        onExpenseClick = { onExpenseClick(item) }
+                    )
+                }
             }
         }
     }

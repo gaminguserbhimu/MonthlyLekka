@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.PieChart
 import androidx.compose.material.icons.rounded.PriceChange
@@ -271,7 +272,7 @@ fun HelpScreen(
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Text(
-                                text = "Replay the interactive 4-slide onboarding guide",
+                                text = "Replay the interactive 5-slide onboarding guide",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
@@ -347,16 +348,16 @@ fun HelpScreen(
                 )
             }
 
-            // Section 4: 📈 4-Slide Table Detail View
+            // Section 4: 📈 5-Slide Table Detail View
             HelpSectionCard(
                 icon = Icons.Rounded.Swipe,
                 iconTint = MaterialTheme.colorScheme.tertiary,
-                title = "📈 4-Slide Table Detail View",
+                title = "📈 5-Slide Table Detail View",
                 badgeText = "SLIDES",
                 containerColor = MaterialTheme.colorScheme.surface
             ) {
                 Text(
-                    text = "Swipe horizontally in any Table Detail screen to explore 4 interactive views:",
+                    text = "Swipe horizontally in any Table Detail screen to explore 5 interactive views:",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -395,6 +396,37 @@ fun HelpScreen(
                     slideTitle = "Yearly Breakdown Table",
                     icon = Icons.Rounded.TableChart,
                     description = "Yearly summary calculation table tracking long-term annual financial balances and spending trends."
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                HelpSlideSubCard(
+                    slideNumber = "5",
+                    slideTitle = "🔍 Custom Date Range Filter",
+                    icon = Icons.Rounded.DateRange,
+                    description = "Filter transactions by custom From and To dates and view total Income, Outcome, and Net Balance calculated specifically for your selected period."
+                )
+            }
+
+            // Section 5: 🔍 Custom Date Range Filter Guide
+            HelpSectionCard(
+                icon = Icons.Rounded.DateRange,
+                iconTint = MaterialTheme.colorScheme.primary,
+                title = "🔍 Custom Date Range Filter",
+                badgeText = "FILTER",
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                HelpBulletItem(
+                    title = "Custom From & To Date Selection",
+                    description = "Select custom From and To dates using the date pickers to inspect transactions for any specific timeframe."
+                )
+                HelpBulletItem(
+                    title = "Real-Time Calculated Totals",
+                    description = "Instantly view total Income, Outcome, and Net Balance (Income - Outcome) computed for the chosen date range."
+                )
+                HelpBulletItem(
+                    title = "Filtered Transactions List",
+                    description = "Browse all expense and income items occurring within your selected date range with full item details."
                 )
             }
 

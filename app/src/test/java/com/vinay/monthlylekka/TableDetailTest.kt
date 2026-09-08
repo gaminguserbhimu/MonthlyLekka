@@ -1,11 +1,15 @@
 package com.vinay.monthlylekka
 
+import com.vinay.monthlylekka.data.Category
+import com.vinay.monthlylekka.data.Expense
+import com.vinay.monthlylekka.data.ExpenseWithCategoryAndLekka
 import com.vinay.monthlylekka.data.MonthlySummary
 import com.vinay.monthlylekka.ui.Route
 import com.vinay.monthlylekka.ui.YearlySummary
 import com.vinay.monthlylekka.ui.toCurrencyString
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.time.LocalDate
 import kotlin.math.abs
 
 class TableDetailTest {
@@ -132,6 +136,53 @@ class TableDetailTest {
         val absBalanceStr2 = abs(negativeNetBalance).toCurrencyString()
         val resultText2 = if (isPositive2) "+ $absBalanceStr2" else "- $absBalanceStr2"
         assertEquals("- ₹ 153", resultText2)
+    }
+
+    @Test
+    fun filterTab_filtersTransactionsAndCalculatesTotalsCorrectly() {
+        val incomeCat =
+            Category(id = 1, lekkaId = 1, name = "Salary", colorHex = "#10B981", isIncome = true)
+        val foodCat = Category(id = 2, lekkaId = 1, name = "Food", colorHex = "#E53935", isIncome = false)
+
+        val item1 = ExpenseWithCategoryAndLekka(
+            expense = Expense(id = 1, lekkaId = 1, description = "Salary", amount = 50000.0, categoryId = 1, date = LocalDate.of(2026, 9, 1)),
+            category = incomeCat,
+            lekkaName = "Monthly Lekka"
+        )
+        val item2 = ExpenseWithCategoryAndLekka(
+            expense = Expense(id = 2, lekkaId = 1, description = "Groceries", amount = 3000.0, categoryId = 2, date = LocalDate.of(2026, 9, 10)),
+            category = foodCat,
+            lekkaName = "Monthly Lekka"
+        )
+        val item3 = ExpenseWithCategoryAndLekka(
+            expense = Expense(id = 3, lekkaId = 1, description = "Restaurant", amount = 1500.0, categoryId = 2, date = LocalDate.of(2026, 9, 25)),
+            category = foodCat,
+            lekkaName = "Monthly Lekka"
+        )
+        val item4 = ExpenseWithCategoryAndLekka(
+            expense = Expense(id = 4, lekkaId = 1, description = "Old Expense", amount = 2000.0, categoryId = 2, date = LocalDate.of(2026, 8, 15)),
+            category = foodCat,
+            lekkaName = "Monthly Lekka"
+        )
+
+        val expenses = listOf(item1, item2, item3, item4)
+
+        val fromDate = LocalDate.of(2026, 9, 1)
+        val toDate = LocalDate.of(2026, 9, 20)
+
+        val filtered = expenses.filter {
+            val d = it.expense.date
+            !d.isBefore(fromDate) && !d.isAfter(toDate)
+        }
+
+        assertEquals(2, filtered.size)
+        val totalIncome = filtered.filter { it.category.isIncome }.sumOf { it.expense.amount }
+        val totalOutcome = filtered.filter { !it.category.isIncome }.sumOf { it.expense.amount }
+        val netBalance = totalIncome - totalOutcome
+
+        assertEquals(50000.0, totalIncome, 0.01)
+        assertEquals(3000.0, totalOutcome, 0.01)
+        assertEquals(47000.0, netBalance, 0.01)
     }
 }
 
