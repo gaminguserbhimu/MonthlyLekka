@@ -165,7 +165,7 @@ fun ExpenseItemCard(
 
             // Column 3: Description - Middle flex space, fits 1 line if short or wraps up to 2 lines if lengthy
             Text(
-                text = expense.description.ifBlank { "No description" },
+                text = expense.description.ifBlank { category.name },
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,

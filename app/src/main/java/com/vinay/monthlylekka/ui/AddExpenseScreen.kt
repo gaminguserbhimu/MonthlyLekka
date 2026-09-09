@@ -190,7 +190,7 @@ fun AddExpenseScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Description") },
+                label = { Text("Description (Optional)") },
                 placeholder = { Text("What was this for?") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -357,7 +357,7 @@ fun AddExpenseScreen(
                     val amountValue = amount.toDoubleOrNull() ?: 0.0
                     val categoryId = selectedCategory?.id
                     val targetLekkaId = selectedLekka?.id
-                    if (description.isNotBlank() && amountValue > 0 && categoryId != null) {
+                    if (amountValue > 0 && categoryId != null) {
                         onSave(expenseToEdit?.expense?.id, description, amountValue, categoryId, date, targetLekkaId)
                     }
                 },

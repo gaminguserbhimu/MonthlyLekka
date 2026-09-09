@@ -376,13 +376,22 @@ fun HelpScreen(
                     slideNumber = "2",
                     slideTitle = "Interactive Category Pie Charts",
                     icon = Icons.Rounded.PieChart,
-                    description = "Visual representation of expense distribution. Tap on any pie slice to inspect the exact amount and percentage breakdown for that category."
+                    description = "Visual representation of overall expense distribution. Tap on any pie slice to inspect the exact amount and percentage breakdown for that category."
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 HelpSlideSubCard(
                     slideNumber = "3",
+                    slideTitle = "🔍 Filter (Date Range, Category Dropdown & Pie Chart)",
+                    icon = Icons.Rounded.DateRange,
+                    description = "3rd Tab: Filter transactions by custom From/To dates and Category dropdown. Includes live Income, Outcome, Net Balance summary bar and an embedded Category Distribution Pie Chart."
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                HelpSlideSubCard(
+                    slideNumber = "4",
                     slideTitle = "Monthly Breakdown Table",
                     icon = Icons.Rounded.Analytics,
                     description = "Monthly summary calculation table.",
@@ -392,41 +401,36 @@ fun HelpScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 HelpSlideSubCard(
-                    slideNumber = "4",
+                    slideNumber = "5",
                     slideTitle = "Yearly Breakdown Table",
                     icon = Icons.Rounded.TableChart,
                     description = "Yearly summary calculation table tracking long-term annual financial balances and spending trends."
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                HelpSlideSubCard(
-                    slideNumber = "5",
-                    slideTitle = "🔍 Custom Date Range Filter",
-                    icon = Icons.Rounded.DateRange,
-                    description = "Filter transactions by custom From and To dates and view total Income, Outcome, and Net Balance calculated specifically for your selected period."
-                )
             }
 
-            // Section 5: 🔍 Custom Date Range Filter Guide
+            // Section 5: 🔍 Custom Date Range & Category Filter Guide
             HelpSectionCard(
                 icon = Icons.Rounded.DateRange,
                 iconTint = MaterialTheme.colorScheme.primary,
-                title = "🔍 Custom Date Range Filter",
-                badgeText = "FILTER",
+                title = "🔍 Filter Tab & Category Analytics",
+                badgeText = "3RD TAB",
                 containerColor = MaterialTheme.colorScheme.surface
             ) {
                 HelpBulletItem(
-                    title = "Custom From & To Date Selection",
-                    description = "Select custom From and To dates using the date pickers to inspect transactions for any specific timeframe."
+                    title = "3rd Tab Navigation",
+                    description = "Positioned as the 3rd tab in Table Details for instant access right next to Pie Charts."
                 )
                 HelpBulletItem(
-                    title = "Real-Time Calculated Totals",
-                    description = "Instantly view total Income, Outcome, and Net Balance (Income - Outcome) computed for the chosen date range."
+                    title = "Custom Date & Category Dropdown Selection",
+                    description = "Filter transactions by From and To dates and filter by specific category (or All Categories)."
                 )
                 HelpBulletItem(
-                    title = "Filtered Transactions List",
-                    description = "Browse all expense and income items occurring within your selected date range with full item details."
+                    title = "Summary Bar & Filtered Pie Chart",
+                    description = "View calculated Income, Outcome, Net Balance, and an embedded Category Distribution Pie Chart specifically for your filtered selection."
+                )
+                HelpBulletItem(
+                    title = "Optional Description Logging",
+                    description = "Descriptions are optional when adding transactions. Blank descriptions cleanly fall back to displaying the category name."
                 )
             }
 

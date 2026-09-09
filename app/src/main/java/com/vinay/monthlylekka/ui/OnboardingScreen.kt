@@ -87,14 +87,14 @@ val onboardingSlides = listOf(
         )
     ),
     OnboardingSlideData(
-        title = "Date Range Filter & Analytics",
-        description = "Filter transactions by custom From and To dates and analyze income, outcome, and net balance.",
-        badge = "FINANCIAL ANALYTICS",
+        title = "3rd Tab: Filter & Category Analytics",
+        description = "Filter transactions by custom dates and category with real-time totals and embedded distribution pie chart.",
+        badge = "3RD TAB FILTER & ANALYTICS",
         icon = Icons.Rounded.DateRange,
         highlights = listOf(
-            "Interactive From & To date range pickers",
-            "Real-time income, outcome & net balance calculation",
-            "Monthly & yearly category analytics breakdowns"
+            "3rd tab order: Custom From/To dates & Category filter dropdown",
+            "Real-time totals (Income, Outcome & Net Balance) & filtered Pie Chart",
+            "Optional description logging with clean category fallback"
         )
     ),
     OnboardingSlideData(

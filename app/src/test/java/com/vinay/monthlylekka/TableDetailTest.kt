@@ -184,5 +184,71 @@ class TableDetailTest {
         assertEquals(3000.0, totalOutcome, 0.01)
         assertEquals(47000.0, netBalance, 0.01)
     }
+
+    @Test
+    fun filterTab_filtersByDateAndCategoryCorrectly() {
+        val incomeCat = Category(id = 1, lekkaId = 1, name = "Salary", colorHex = "#10B981", isIncome = true)
+        val foodCat = Category(id = 2, lekkaId = 1, name = "Food", colorHex = "#E53935", isIncome = false)
+        val travelCat = Category(id = 3, lekkaId = 1, name = "Travel", colorHex = "#3B82F6", isIncome = false)
+
+        val item1 = ExpenseWithCategoryAndLekka(
+            expense = Expense(id = 1, lekkaId = 1, description = "Salary", amount = 50000.0, categoryId = 1, date = LocalDate.of(2026, 9, 1)),
+            category = incomeCat,
+            lekkaName = "Monthly Lekka"
+        )
+        val item2 = ExpenseWithCategoryAndLekka(
+            expense = Expense(id = 2, lekkaId = 1, description = "Groceries", amount = 3000.0, categoryId = 2, date = LocalDate.of(2026, 9, 10)),
+            category = foodCat,
+            lekkaName = "Monthly Lekka"
+        )
+        val item3 = ExpenseWithCategoryAndLekka(
+            expense = Expense(id = 3, lekkaId = 1, description = "Bus Ticket", amount = 500.0, categoryId = 3, date = LocalDate.of(2026, 9, 15)),
+            category = travelCat,
+            lekkaName = "Monthly Lekka"
+        )
+
+        val expenses = listOf(item1, item2, item3)
+        val fromDate = LocalDate.of(2026, 9, 1)
+        val toDate = LocalDate.of(2026, 9, 20)
+
+        // All Categories selected
+        val selectedCategoryAll = "All Categories"
+        val filteredAll = expenses.filter { item ->
+            val d = item.expense.date
+            val dateInRange = !d.isBefore(fromDate) && !d.isAfter(toDate)
+            val categoryMatches = selectedCategoryAll == "All Categories" || item.category.name == selectedCategoryAll
+            dateInRange && categoryMatches
+        }
+        assertEquals(3, filteredAll.size)
+
+        // Specific Category "Food" selected
+        val selectedCategoryFood = "Food"
+        val filteredFood = expenses.filter { item ->
+            val d = item.expense.date
+            val dateInRange = !d.isBefore(fromDate) && !d.isAfter(toDate)
+            val categoryMatches = selectedCategoryFood == "All Categories" || item.category.name == selectedCategoryFood
+            dateInRange && categoryMatches
+        }
+        assertEquals(1, filteredFood.size)
+        assertEquals("Groceries", filteredFood.first().expense.description)
+        assertEquals("Food", filteredFood.first().category.name)
+    }
+
+    @Test
+    fun expenseDescription_fallbackToCategoryNameWhenBlank() {
+        val foodCat = Category(id = 2, lekkaId = 1, name = "Food", colorHex = "#E53935", isIncome = false)
+
+        val expWithBlankDesc = Expense(id = 1, lekkaId = 1, description = "", amount = 250.0, categoryId = 2, date = LocalDate.now())
+        val displayText1 = expWithBlankDesc.description.ifBlank { foodCat.name }
+        assertEquals("Food", displayText1)
+
+        val expWithSpaceDesc = Expense(id = 2, lekkaId = 1, description = "   ", amount = 150.0, categoryId = 2, date = LocalDate.now())
+        val displayText2 = expWithSpaceDesc.description.ifBlank { foodCat.name }
+        assertEquals("Food", displayText2)
+
+        val expWithNormalDesc = Expense(id = 3, lekkaId = 1, description = "Snacks", amount = 100.0, categoryId = 2, date = LocalDate.now())
+        val displayText3 = expWithNormalDesc.description.ifBlank { foodCat.name }
+        assertEquals("Snacks", displayText3)
+    }
 }
 
