@@ -2098,20 +2098,6 @@ fun FilterTabSlide(
             }
         }
 
-        // Category Distribution Pie Chart Card
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                SinglePieChartCard(
-                    title = "Category Distribution",
-                    expenses = filteredExpenses
-                )
-            }
-        }
-
         // Filtered Transactions List
         if (filteredExpenses.isEmpty()) {
             item {
@@ -2151,6 +2137,20 @@ fun FilterTabSlide(
                         onExpenseClick = { onExpenseClick(item) }
                     )
                 }
+            }
+        }
+
+        // Category Distribution Pie Chart Card
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                SinglePieChartCard(
+                    title = "Category Distribution",
+                    expenses = filteredExpenses
+                )
             }
         }
     }
