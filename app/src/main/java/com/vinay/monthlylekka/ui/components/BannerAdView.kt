@@ -25,12 +25,11 @@ import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 
 /**
  * Google AdMob Banner Ad View Component.
- * Uses test Ad Unit ID: ca-app-pub-3940256099942544/6300978111
  */
 @Composable
 fun BannerAdView(
     modifier: Modifier = Modifier,
-    adUnitId: String = "ca-app-pub-3940256099942544/6300978111"
+    adUnitId: String = "ca-app-pub-4120760179761356/2871652402"
 ) {
     val isInEditMode = LocalInspectionMode.current
     if (isInEditMode) {
