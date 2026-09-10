@@ -54,12 +54,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vinay.monthlylekka.ui.components.CurrencySettingDialog
+import com.vinay.monthlylekka.ui.components.InterstitialAdManager
+import com.vinay.monthlylekka.ui.components.findActivity
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,16 +78,26 @@ fun HelpScreen(
     onUpdateCurrencySymbol: (String) -> Unit = {}
 ) {
     var showCurrencyDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
+
     val exportCsvLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
     ) { uri: Uri? ->
-        uri?.let { onExportCsv(it) }
+        uri?.let {
+            onExportCsv(it)
+            InterstitialAdManager.showAd(activity)
+        }
     }
 
     val exportJsonLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri: Uri? ->
-        uri?.let { onExportBackup(it) }
+        uri?.let {
+            onExportBackup(it)
+            InterstitialAdManager.showAd(activity)
+        }
     }
 
     val importJsonLauncher = rememberLauncherForActivityResult(

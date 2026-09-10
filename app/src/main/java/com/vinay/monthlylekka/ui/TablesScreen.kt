@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,6 +41,8 @@ import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.LekkaWithSummary
 import com.vinay.monthlylekka.ui.components.BannerAdView
 import com.vinay.monthlylekka.ui.components.CurrencySettingDialog
+import com.vinay.monthlylekka.ui.components.InterstitialAdManager
+import com.vinay.monthlylekka.ui.components.findActivity
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,16 +68,25 @@ fun TablesScreen(
     var showDeleteConfirm by remember { mutableStateOf<Lekka?>(null) }
     var showCurrencyDialog by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
+
     val exportCsvLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
     ) { uri: Uri? ->
-        uri?.let { onExportCsv(it) }
+        uri?.let {
+            onExportCsv(it)
+            InterstitialAdManager.showAd(activity)
+        }
     }
 
     val exportJsonLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri: Uri? ->
-        uri?.let { onExportBackup(it) }
+        uri?.let {
+            onExportBackup(it)
+            InterstitialAdManager.showAd(activity)
+        }
     }
 
     val importJsonLauncher = rememberLauncherForActivityResult(
@@ -285,6 +297,7 @@ fun TablesScreen(
             onConfirm = { name: String, isDefault: Boolean, categories: List<CategorySpec> ->
                 onCreateLekka(name, null, null, isDefault, categories)
                 showCreateDialog = false
+                InterstitialAdManager.showAd(activity)
             }
         )
     }

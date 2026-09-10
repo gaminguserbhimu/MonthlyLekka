@@ -38,6 +38,7 @@ import com.vinay.monthlylekka.ui.Route
 import com.vinay.monthlylekka.ui.TableDetailScreen
 import com.vinay.monthlylekka.ui.TablesScreen
 import com.vinay.monthlylekka.ui.WelcomeScreen
+import com.vinay.monthlylekka.ui.components.InterstitialAdManager
 import com.vinay.monthlylekka.ui.theme.MonthlyLekkaTheme
 import com.vinay.monthlylekka.ui.viewmodel.ExpenseViewModel
 import com.vinay.monthlylekka.ui.viewmodel.ExpenseViewModelFactory
@@ -51,6 +52,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         MobileAds.initialize(this) {}
+        InterstitialAdManager.loadAd(this)
         handleIntent(intent)
 
         setContent {
