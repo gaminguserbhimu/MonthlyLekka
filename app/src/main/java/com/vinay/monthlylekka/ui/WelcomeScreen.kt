@@ -77,9 +77,12 @@ fun WelcomeScreen(
     val isLargeScreen = configuration.screenWidthDp > 600
     val verticalSpacing = ((configuration.screenHeightDp / 70).coerceIn(8, 14)).dp
 
-    val masterLekkaWithSummary = lekkas.find { it.lekka.isMotherTable } ?: lekkas.firstOrNull()
-    val childLekkas = lekkas.filter { !it.lekka.isMotherTable }
-    val activeLekkaWithSummary = lekkas.find { it.lekka.id == selectedLekkaId } ?: masterLekkaWithSummary
+    val distinctLekkas = remember(lekkas) {
+        lekkas.distinctBy { if (it.lekka.isMotherTable) "MASTER" else it.lekka.id.toString() }
+    }
+    val masterLekkaWithSummary = distinctLekkas.find { it.lekka.isMotherTable } ?: distinctLekkas.firstOrNull()
+    val childLekkas = distinctLekkas.filter { !it.lekka.isMotherTable }
+    val activeLekkaWithSummary = distinctLekkas.find { it.lekka.id == selectedLekkaId } ?: masterLekkaWithSummary
     val activeId = activeLekkaWithSummary?.lekka?.id
 
     val aggregatedSummary = motherTableSummary 
@@ -87,15 +90,15 @@ fun WelcomeScreen(
         ?: LekkaSummary(0, 0.0, 0.0)
 
     // Most Recently Updated Table Computation
-    val targetMostRecentWithSummary = lekkas.find { it.lekka.id == mostRecentTable?.id }
+    val targetMostRecentWithSummary = distinctLekkas.find { it.lekka.id == mostRecentTable?.id }
         ?: childLekkas.find { it.lekka.isDefault }
         ?: childLekkas.firstOrNull()
     val targetMostRecentTable = targetMostRecentWithSummary?.lekka
     val targetMostRecentSummary = targetMostRecentWithSummary?.summary
 
-    LaunchedEffect(lekkas, selectedLekkaId) {
-        if (lekkas.isNotEmpty() && (selectedLekkaId == null || lekkas.none { it.lekka.id == selectedLekkaId })) {
-            val defaultLekka = lekkas.find { it.lekka.isDefault } ?: lekkas.first()
+    LaunchedEffect(distinctLekkas, selectedLekkaId) {
+        if (distinctLekkas.isNotEmpty() && (selectedLekkaId == null || distinctLekkas.none { it.lekka.id == selectedLekkaId })) {
+            val defaultLekka = distinctLekkas.find { it.lekka.isDefault } ?: distinctLekkas.first()
             onLekkaSelected(defaultLekka.lekka.id)
         }
     }
@@ -301,7 +304,7 @@ fun WelcomeScreen(
                     onDismissRequest = { dropdownExpanded = false },
                     modifier = Modifier.widthIn(min = 260.dp)
                 ) {
-                    lekkas.forEach { item ->
+                    distinctLekkas.forEach { item ->
                         DropdownMenuItem(
                             text = {
                                 Row(

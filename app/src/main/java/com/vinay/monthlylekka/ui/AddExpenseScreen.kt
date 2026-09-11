@@ -46,12 +46,16 @@ fun AddExpenseScreen(
     var description by remember(expenseToEdit) { mutableStateOf(expenseToEdit?.expense?.description ?: "") }
     var amount by remember(expenseToEdit) { mutableStateOf(expenseToEdit?.expense?.amount?.toString() ?: "") }
     
-    var selectedLekka by remember(availableLekkas, initialLekkaId, expenseToEdit) {
+    val distinctAvailableLekkas = remember(availableLekkas) {
+        availableLekkas.distinctBy { if (it.isMotherTable) "MASTER" else it.id.toString() }
+    }
+
+    var selectedLekka by remember(distinctAvailableLekkas, initialLekkaId, expenseToEdit) {
         mutableStateOf<Lekka?>(
-            availableLekkas.find { it.id == expenseToEdit?.expense?.lekkaId }
-                ?: availableLekkas.find { it.id == initialLekkaId }
-                ?: availableLekkas.find { it.isDefault }
-                ?: availableLekkas.firstOrNull()
+            distinctAvailableLekkas.find { it.id == expenseToEdit?.expense?.lekkaId }
+                ?: distinctAvailableLekkas.find { it.id == initialLekkaId }
+                ?: distinctAvailableLekkas.find { it.isDefault }
+                ?: distinctAvailableLekkas.firstOrNull()
         )
     }
 
@@ -326,7 +330,7 @@ fun AddExpenseScreen(
                         expanded = tableDropdownExpanded,
                         onDismissRequest = { tableDropdownExpanded = false }
                     ) {
-                        availableLekkas.forEach { lekka ->
+                        distinctAvailableLekkas.forEach { lekka ->
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {

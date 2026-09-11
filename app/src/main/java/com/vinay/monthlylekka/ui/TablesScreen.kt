@@ -95,8 +95,11 @@ fun TablesScreen(
         uri?.let { onImportBackup(it) }
     }
 
-    val masterLekkaWithSummary = lekkas.find { it.lekka.isMotherTable } ?: lekkas.firstOrNull()
-    val childLekkas = lekkas.filter { !it.lekka.isMotherTable }
+    val distinctLekkas = remember(lekkas) {
+        lekkas.distinctBy { if (it.lekka.isMotherTable) "MASTER" else it.lekka.id.toString() }
+    }
+    val masterLekkaWithSummary = distinctLekkas.find { it.lekka.isMotherTable } ?: distinctLekkas.firstOrNull()
+    val childLekkas = distinctLekkas.filter { !it.lekka.isMotherTable }
 
     val masterSummary = motherTableSummary 
         ?: masterLekkaWithSummary?.summary 
@@ -385,24 +388,6 @@ fun MasterTableOverviewCard(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
-
-                        if (masterItem.lekka.isDefault) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFF10B981)
-                            ) {
-                                Text(
-                                    text = "★ DEFAULT",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                                    color = Color.White,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
                     }
 
                     Text(
@@ -542,12 +527,14 @@ fun ChildTableCard(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onSetDefault) {
-                    Icon(
-                        imageVector = if (lekka.isDefault) Icons.Rounded.Star else Icons.Rounded.StarBorder,
-                        contentDescription = if (lekka.isDefault) "Default Expense Table" else "Set as Default",
-                        tint = if (lekka.isDefault) Color(0xFFEAB308) else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                if (!lekka.isMotherTable) {
+                    IconButton(onClick = onSetDefault) {
+                        Icon(
+                            imageVector = if (lekka.isDefault) Icons.Rounded.Star else Icons.Rounded.StarBorder,
+                            contentDescription = if (lekka.isDefault) "Default Expense Table" else "Set as Default",
+                            tint = if (lekka.isDefault) Color(0xFFEAB308) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
                 IconButton(onClick = onEdit) {
                     Icon(

@@ -319,6 +319,62 @@ class ExpenseViewModelTest {
     }
 
     @Test
+    fun init_cleansDuplicateMotherTablesAndEnsuresMotherTableNotDefault() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+
+        // Insert duplicate mother tables where one is default
+        fakeLekkaDao.insertLekka(Lekka(id = 1, name = "Master Expense Table", isMotherTable = true, isDefault = true))
+        fakeLekkaDao.insertLekka(Lekka(id = 2, name = "Master Duplicate", isMotherTable = true, isDefault = false))
+        fakeLekkaDao.insertLekka(Lekka(id = 3, name = "Home Expenses", isMotherTable = false, isDefault = false))
+
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        advanceUntilIdle()
+        assertNotNull(viewModel)
+
+        val lekkas = fakeLekkaDao.getAllLekkas().first()
+        val motherTables = lekkas.filter { it.isMotherTable }
+
+        // Extra duplicate mother table deleted, only 1 remains
+        assertEquals(1, motherTables.size)
+        assertEquals(1L, motherTables.first().id)
+
+        // Ensure Mother Table is strictly isDefault = false
+        assertFalse(motherTables.first().isDefault)
+    }
+
+    @Test
+    fun setDefaultLekka_ignoresMotherTable() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+
+        fakeLekkaDao.insertLekka(Lekka(id = 1, name = "Master Expense Table", isMotherTable = true, isDefault = false))
+        fakeLekkaDao.insertLekka(Lekka(id = 2, name = "Home Expenses", isMotherTable = false, isDefault = true))
+
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        advanceUntilIdle()
+
+        // Attempt to set Mother Table as default via setDefaultLekka and setDefaultTable
+        viewModel.setDefaultLekka(1L)
+        advanceUntilIdle()
+
+        val motherTable1 = fakeLekkaDao.getLekkaById(1L)!!
+        assertFalse(motherTable1.isDefault)
+
+        viewModel.setDefaultTable(motherTable1)
+        advanceUntilIdle()
+
+        val motherTable2 = fakeLekkaDao.getLekkaById(1L)!!
+        assertFalse(motherTable2.isDefault)
+    }
+
+    @Test
     fun addLekka_seedsDefaultCategories() = runTest {
         val fakeLekkaDao = FakeLekkaDao()
         val fakeCategoryDao = FakeCategoryDao()

@@ -324,11 +324,24 @@ class ExpenseViewModel(
                 if (lekkas.isEmpty()) {
                     repository.populateDatabase()
                     _selectedLekkaId.value = null
-                } else if (_selectedLekkaId.value == null || lekkas.none { it.id == _selectedLekkaId.value }) {
-                    val masterLekka = lekkas.find { it.isMotherTable }
-                    val defaultLekka = masterLekka ?: lekkas.find { it.isDefault } ?: lekkas.firstOrNull()
-                    defaultLekka?.let {
-                        _selectedLekkaId.value = it.id
+                } else {
+                    val motherTables = lekkas.filter { it.isMotherTable }
+                    if (motherTables.size > 1) {
+                        motherTables.drop(1).forEach { duplicate ->
+                            repository.deleteLekka(duplicate)
+                        }
+                    }
+                    val firstMother = motherTables.firstOrNull()
+                    if (firstMother != null && firstMother.isDefault) {
+                        repository.updateLekka(firstMother.copy(isDefault = false))
+                    }
+
+                    if (_selectedLekkaId.value == null || lekkas.none { it.id == _selectedLekkaId.value }) {
+                        val masterLekka = lekkas.find { it.isMotherTable }
+                        val defaultLekka = masterLekka ?: lekkas.find { it.isDefault } ?: lekkas.firstOrNull()
+                        defaultLekka?.let {
+                            _selectedLekkaId.value = it.id
+                        }
                     }
                 }
             }
@@ -351,8 +364,19 @@ class ExpenseViewModel(
 
     fun setDefaultLekka(lekkaId: Long) {
         viewModelScope.launch(ioDispatcher) {
+            val lekka = repository.getLekkaById(lekkaId)
+            if (lekka?.isMotherTable == true) return@launch
             repository.setDefaultLekka(lekkaId)
         }
+    }
+
+    fun setDefaultTable(lekka: Lekka) {
+        if (lekka.isMotherTable) return
+        setDefaultLekka(lekka.id)
+    }
+
+    fun setDefaultTable(lekkaId: Long) {
+        setDefaultLekka(lekkaId)
     }
 
     fun addExpense(expense: Expense, targetLekkaId: Long? = null) {
@@ -500,9 +524,10 @@ class ExpenseViewModel(
         categories: List<CategorySpec>? = null
     ) {
         viewModelScope.launch(ioDispatcher) {
-            val updatedLekka = lekka.copy(isDefault = isDefault)
+            val targetIsDefault = if (lekka.isMotherTable) false else isDefault
+            val updatedLekka = lekka.copy(isDefault = targetIsDefault)
             repository.updateLekka(updatedLekka)
-            if (isDefault) {
+            if (targetIsDefault) {
                 repository.setDefaultLekka(lekka.id)
             }
             if (categories != null) {
