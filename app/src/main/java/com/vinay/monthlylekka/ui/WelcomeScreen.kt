@@ -82,7 +82,9 @@ fun WelcomeScreen(
     }
     val masterLekkaWithSummary = distinctLekkas.find { it.lekka.isMotherTable } ?: distinctLekkas.firstOrNull()
     val childLekkas = distinctLekkas.filter { !it.lekka.isMotherTable }
-    val activeLekkaWithSummary = distinctLekkas.find { it.lekka.id == selectedLekkaId } ?: masterLekkaWithSummary
+    val activeLekkaWithSummary = childLekkas.find { it.lekka.id == selectedLekkaId }
+        ?: childLekkas.find { it.lekka.isDefault }
+        ?: childLekkas.firstOrNull()
     val activeId = activeLekkaWithSummary?.lekka?.id
 
     val aggregatedSummary = motherTableSummary 
@@ -96,9 +98,9 @@ fun WelcomeScreen(
     val targetMostRecentTable = targetMostRecentWithSummary?.lekka
     val targetMostRecentSummary = targetMostRecentWithSummary?.summary
 
-    LaunchedEffect(distinctLekkas, selectedLekkaId) {
-        if (distinctLekkas.isNotEmpty() && (selectedLekkaId == null || distinctLekkas.none { it.lekka.id == selectedLekkaId })) {
-            val defaultLekka = distinctLekkas.find { it.lekka.isDefault } ?: distinctLekkas.first()
+    LaunchedEffect(childLekkas, selectedLekkaId) {
+        if (childLekkas.isNotEmpty() && (selectedLekkaId == null || childLekkas.none { it.lekka.id == selectedLekkaId })) {
+            val defaultLekka = childLekkas.find { it.lekka.isDefault } ?: childLekkas.first()
             onLekkaSelected(defaultLekka.lekka.id)
         }
     }
@@ -256,23 +258,7 @@ fun WelcomeScreen(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f, fill = false)
                             )
-                            if (activeLekkaWithSummary?.lekka?.isMotherTable == true) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer
-                                ) {
-                                    Text(
-                                        text = "👑 MASTER",
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-                            } else if (activeLekkaWithSummary?.lekka?.isDefault == true) {
+                            if (activeLekkaWithSummary?.lekka?.isDefault == true) {
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
@@ -304,7 +290,7 @@ fun WelcomeScreen(
                     onDismissRequest = { dropdownExpanded = false },
                     modifier = Modifier.widthIn(min = 260.dp)
                 ) {
-                    distinctLekkas.forEach { item ->
+                    childLekkas.forEach { item ->
                         DropdownMenuItem(
                             text = {
                                 Row(
@@ -318,22 +304,7 @@ fun WelcomeScreen(
                                         softWrap = false,
                                         overflow = TextOverflow.Ellipsis
                                     )
-                                    if (item.lekka.isMotherTable) {
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = MaterialTheme.colorScheme.primaryContainer
-                                        ) {
-                                            Text(
-                                                text = "👑 MASTER",
-                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                maxLines = 1,
-                                                softWrap = false,
-                                                overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                            )
-                                        }
-                                    } else if (item.lekka.isDefault) {
+                                    if (item.lekka.isDefault) {
                                         Surface(
                                             shape = RoundedCornerShape(4.dp),
                                             color = Color(0xFF10B981)

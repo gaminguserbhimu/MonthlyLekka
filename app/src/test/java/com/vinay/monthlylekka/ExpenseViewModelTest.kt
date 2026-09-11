@@ -236,8 +236,47 @@ class ExpenseViewModelTest {
         assertNotNull(childLekka)
         assertEquals("Monthly Expenses", childLekka!!.name)
         assertTrue(childLekka.isDefault)
-        assertEquals(masterLekka.id, viewModel.selectedLekkaId.value)
-        assertTrue(viewModel.isMotherTableSelected.value)
+        assertEquals(childLekka.id, viewModel.selectedLekkaId.value)
+        assertFalse(viewModel.isMotherTableSelected.value)
+    }
+
+    @Test
+    fun init_ensuresActiveTablePointsToDefaultChildTable() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        fakeLekkaDao.insertLekka(Lekka(id = 1, name = "Master Expense Table", isMotherTable = true, isDefault = false))
+        fakeLekkaDao.insertLekka(Lekka(id = 2, name = "Home Expenses", isMotherTable = false, isDefault = true))
+        fakeLekkaDao.insertLekka(Lekka(id = 3, name = "Goa Trip", isMotherTable = false, isDefault = false))
+
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        advanceUntilIdle()
+
+        assertEquals(2L, viewModel.selectedLekkaId.value)
+        assertEquals("Home Expenses", viewModel.activeLekka.value?.name)
+        assertFalse(viewModel.isMotherTableSelected.value)
+    }
+
+    @Test
+    fun selectLekka_motherTableSelected_switchesToDefaultChildTable() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        fakeLekkaDao.insertLekka(Lekka(id = 1, name = "Master Expense Table", isMotherTable = true, isDefault = false))
+        fakeLekkaDao.insertLekka(Lekka(id = 2, name = "Home Expenses", isMotherTable = false, isDefault = true))
+
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        advanceUntilIdle()
+
+        viewModel.selectLekka(1L)
+        advanceUntilIdle()
+
+        assertEquals(2L, viewModel.selectedLekkaId.value)
+        assertFalse(viewModel.isMotherTableSelected.value)
     }
 
     @Test

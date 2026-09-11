@@ -47,7 +47,7 @@ fun AddExpenseScreen(
     var amount by remember(expenseToEdit) { mutableStateOf(expenseToEdit?.expense?.amount?.toString() ?: "") }
     
     val distinctAvailableLekkas = remember(availableLekkas) {
-        availableLekkas.distinctBy { if (it.isMotherTable) "MASTER" else it.id.toString() }
+        availableLekkas.filter { !it.isMotherTable }.distinctBy { it.id.toString() }
     }
 
     var selectedLekka by remember(distinctAvailableLekkas, initialLekkaId, expenseToEdit) {

@@ -106,6 +106,18 @@ class ExpenseViewModel(
             initialValue = emptyList()
         )
 
+    val activeLekka: StateFlow<Lekka?> = combine(_selectedLekkaId, childLekkas) { id, children ->
+        if (id == null) {
+            children.find { it.isDefault } ?: children.firstOrNull()
+        } else {
+            children.find { it.id == id } ?: children.find { it.isDefault } ?: children.firstOrNull()
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = null
+    )
+
     val isMotherTableSelected: StateFlow<Boolean> = combine(_selectedLekkaId, allLekkas) { id, lekkas ->
         val selected = lekkas.find { it.id == id }
         selected?.isMotherTable == true
@@ -336,10 +348,13 @@ class ExpenseViewModel(
                         repository.updateLekka(firstMother.copy(isDefault = false))
                     }
 
-                    if (_selectedLekkaId.value == null || lekkas.none { it.id == _selectedLekkaId.value }) {
-                        val masterLekka = lekkas.find { it.isMotherTable }
-                        val defaultLekka = masterLekka ?: lekkas.find { it.isDefault } ?: lekkas.firstOrNull()
-                        defaultLekka?.let {
+                    val childLekkasList = lekkas.filter { !it.isMotherTable }
+                    val currentSelectedId = _selectedLekkaId.value
+                    val currentSelectedLekka = lekkas.find { it.id == currentSelectedId }
+
+                    if (currentSelectedId == null || currentSelectedLekka == null || currentSelectedLekka.isMotherTable) {
+                        val defaultChildTable = childLekkasList.find { it.isDefault } ?: childLekkasList.firstOrNull()
+                        defaultChildTable?.let {
                             _selectedLekkaId.value = it.id
                         }
                     }
@@ -359,7 +374,13 @@ class ExpenseViewModel(
     }
 
     fun selectLekka(id: Long) {
-        _selectedLekkaId.value = id
+        val selected = allLekkas.value.find { it.id == id }
+        if (selected != null && selected.isMotherTable) {
+            val defaultChild = childLekkas.value.find { it.isDefault } ?: childLekkas.value.firstOrNull()
+            defaultChild?.let { _selectedLekkaId.value = it.id }
+        } else {
+            _selectedLekkaId.value = id
+        }
     }
 
     fun setDefaultLekka(lekkaId: Long) {
