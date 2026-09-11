@@ -260,7 +260,7 @@ class ExpenseViewModelTest {
     }
 
     @Test
-    fun selectLekka_motherTableSelected_switchesToDefaultChildTable() = runTest {
+    fun selectLekka_motherTableSelected_selectsMotherTable() = runTest {
         val fakeLekkaDao = FakeLekkaDao()
         val fakeCategoryDao = FakeCategoryDao()
         val fakeExpenseDao = FakeExpenseDao()
@@ -275,8 +275,62 @@ class ExpenseViewModelTest {
         viewModel.selectLekka(1L)
         advanceUntilIdle()
 
-        assertEquals(2L, viewModel.selectedLekkaId.value)
-        assertFalse(viewModel.isMotherTableSelected.value)
+        assertEquals(1L, viewModel.selectedLekkaId.value)
+        assertTrue(viewModel.isMotherTableSelected.value)
+    }
+
+    @Test
+    fun motherTable_returnsAllExpensesAcrossAllChildTablesAndAggregatesSummary() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val fakeCategoryDao = FakeCategoryDao(fakeExpenseDao.expenses)
+
+        val motherId = fakeLekkaDao.insertLekka(Lekka(id = 1, name = "Master Expense Table", isMotherTable = true, isDefault = false))
+        val child1Id = fakeLekkaDao.insertLekka(Lekka(id = 2, name = "Table 1", isMotherTable = false, isDefault = true))
+        val child2Id = fakeLekkaDao.insertLekka(Lekka(id = 3, name = "Table 2", isMotherTable = false, isDefault = false))
+
+        val incomeCat1 = Category(id = 10, lekkaId = child1Id, name = "Income", colorHex = "#00FF00", isIncome = true)
+        val expenseCat1 = Category(id = 11, lekkaId = child1Id, name = "Food", colorHex = "#FF0000", isIncome = false)
+        val incomeCat2 = Category(id = 20, lekkaId = child2Id, name = "Income", colorHex = "#00FF00", isIncome = true)
+        val expenseCat2 = Category(id = 21, lekkaId = child2Id, name = "Travel", colorHex = "#0000FF", isIncome = false)
+
+        fakeCategoryDao.insertCategories(listOf(incomeCat1, expenseCat1, incomeCat2, expenseCat2))
+
+        val now = LocalDate.now()
+        val exp1 = Expense(id = 101, lekkaId = child1Id, categoryId = incomeCat1.id, amount = 1000.0, description = "Salary 1", date = now)
+        val exp2 = Expense(id = 102, lekkaId = child1Id, categoryId = expenseCat1.id, amount = 300.0, description = "Lunch", date = now)
+        val exp3 = Expense(id = 103, lekkaId = child2Id, categoryId = incomeCat2.id, amount = 500.0, description = "Freelance", date = now)
+        val exp4 = Expense(id = 104, lekkaId = child2Id, categoryId = expenseCat2.id, amount = 200.0, description = "Bus", date = now)
+
+        val item1 = ExpenseWithCategoryAndLekka(exp1, incomeCat1, "Table 1")
+        val item2 = ExpenseWithCategoryAndLekka(exp2, expenseCat1, "Table 1")
+        val item3 = ExpenseWithCategoryAndLekka(exp3, incomeCat2, "Table 2")
+        val item4 = ExpenseWithCategoryAndLekka(exp4, expenseCat2, "Table 2")
+
+        fakeExpenseDao.expenses.value = listOf(item1, item2, item3, item4)
+
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        val expJob = launch { viewModel.expenses.collect {} }
+        val sumJob = launch { viewModel.motherTableSummary.collect {} }
+
+        advanceUntilIdle()
+
+        viewModel.selectLekka(motherId)
+        advanceUntilIdle()
+
+        val currentExpenses = viewModel.expenses.value
+        assertEquals(4, currentExpenses.size)
+
+        val summary = viewModel.motherTableSummary.value
+        assertNotNull(summary)
+        assertEquals(1500.0, summary!!.totalIncome, 0.01)
+        assertEquals(500.0, summary.totalExpense, 0.01)
+        assertEquals(1000.0, summary.balance, 0.01)
+
+        expJob.cancel()
+        sumJob.cancel()
     }
 
     @Test

@@ -25,6 +25,7 @@ import com.vinay.monthlylekka.ui.CurrencyUtils
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -106,11 +107,15 @@ class ExpenseViewModel(
             initialValue = emptyList()
         )
 
-    val activeLekka: StateFlow<Lekka?> = combine(_selectedLekkaId, childLekkas) { id, children ->
+    val activeLekka: StateFlow<Lekka?> = combine(_selectedLekkaId, allLekkas) { id, lekkas ->
+        val childLekkas = lekkas.filter { !it.isMotherTable }
         if (id == null) {
-            children.find { it.isDefault } ?: children.firstOrNull()
+            childLekkas.find { it.isDefault } ?: childLekkas.firstOrNull() ?: lekkas.firstOrNull()
         } else {
-            children.find { it.id == id } ?: children.find { it.isDefault } ?: children.firstOrNull()
+            lekkas.find { it.id == id }
+                ?: childLekkas.find { it.isDefault }
+                ?: childLekkas.firstOrNull()
+                ?: lekkas.firstOrNull()
         }
     }.stateIn(
         scope = viewModelScope,
@@ -128,17 +133,14 @@ class ExpenseViewModel(
     )
 
     val motherTableSummary: StateFlow<LekkaSummary?> = combine(
-        repository.getAllExpensesWithCategoryAndLekka(),
-        selectedCycle
-    ) { allExpenses, cycle ->
-        val filtered = allExpenses.filter { item ->
-            val date = item.expense.date
-            !date.isBefore(cycle.startDate) && !date.isAfter(cycle.endDate)
-        }
-        val totalIncome = filtered.filter { it.category.isIncome }.sumOf { it.expense.amount }
-        val totalExpense = filtered.filter { !it.category.isIncome }.sumOf { it.expense.amount }
+        repository.getAllExpensesWithCategoryAndLekkaFlow(),
+        allLekkas
+    ) { allExpenses, lekkas ->
+        val motherLekkaId = lekkas.find { it.isMotherTable }?.id ?: 0L
+        val totalIncome = allExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
+        val totalExpense = allExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
         LekkaSummary(
-            lekkaId = 0L,
+            lekkaId = motherLekkaId,
             totalIncome = totalIncome,
             totalExpense = totalExpense
         )
@@ -149,7 +151,7 @@ class ExpenseViewModel(
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val mostRecentTable: StateFlow<Lekka?> = combine(allLekkas, repository.getAllExpensesWithCategoryAndLekka()) { lekkas, allExpenses ->
+    val mostRecentTable: StateFlow<Lekka?> = combine(allLekkas, repository.getAllExpensesWithCategoryAndLekkaFlow()) { lekkas, allExpenses ->
         val childLekkas = lekkas.filter { !it.isMotherTable }
         if (childLekkas.isEmpty()) return@combine null
 
@@ -173,21 +175,21 @@ class ExpenseViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     val allLekkasWithSummary: StateFlow<List<LekkaWithSummary>> = combine(
         allLekkas,
-        repository.getAllExpensesWithCategoryAndLekka(),
+        repository.getAllExpensesWithCategoryAndLekkaFlow(),
         selectedCycle
     ) { lekkas, allExpenses, cycle ->
         if (lekkas.isEmpty()) emptyList()
         else {
-            val cycleExpenses = allExpenses.filter { item ->
-                val date = item.expense.date
-                !date.isBefore(cycle.startDate) && !date.isAfter(cycle.endDate)
-            }
             lekkas.map { lekka ->
                 val summary = if (lekka.isMotherTable) {
-                    val totalIncome = cycleExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
-                    val totalExpense = cycleExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
+                    val totalIncome = allExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
+                    val totalExpense = allExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
                     LekkaSummary(lekka.id, totalIncome, totalExpense)
                 } else {
+                    val cycleExpenses = allExpenses.filter { item ->
+                        val date = item.expense.date
+                        !date.isBefore(cycle.startDate) && !date.isAfter(cycle.endDate)
+                    }
                     val tableExpenses = cycleExpenses.filter { it.expense.lekkaId == lekka.id }
                     val totalIncome = tableExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
                     val totalExpense = tableExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
@@ -214,15 +216,14 @@ class ExpenseViewModel(
             flowOf(emptyList())
         } else {
             val selected = lekkas.find { it.id == id }
-            val flow = if (selected?.isMotherTable == true) {
-                repository.getAllExpensesWithCategoryAndLekka()
+            if (selected?.isMotherTable == true) {
+                repository.getAllExpensesWithCategoryAndLekkaFlow()
             } else {
-                repository.getExpensesWithCategoryAndLekka(id)
-            }
-            flow.map { list ->
-                list.filter { item ->
-                    val date = item.expense.date
-                    !date.isBefore(cycle.startDate) && !date.isAfter(cycle.endDate)
+                repository.getExpensesWithCategoryAndLekka(id).map { list ->
+                    list.filter { item ->
+                        val date = item.expense.date
+                        !date.isBefore(cycle.startDate) && !date.isAfter(cycle.endDate)
+                    }
                 }
             }
         }
@@ -231,6 +232,10 @@ class ExpenseViewModel(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
+
+    fun getAllExpensesWithCategoryAndLekkaFlow(): Flow<List<ExpenseWithCategoryAndLekka>> {
+        return repository.getAllExpensesWithCategoryAndLekkaFlow()
+    }
 
     private val seedingLekkaIds = Collections.synchronizedSet(mutableSetOf<Long>())
 
@@ -352,7 +357,7 @@ class ExpenseViewModel(
                     val currentSelectedId = _selectedLekkaId.value
                     val currentSelectedLekka = lekkas.find { it.id == currentSelectedId }
 
-                    if (currentSelectedId == null || currentSelectedLekka == null || currentSelectedLekka.isMotherTable) {
+                    if (currentSelectedId == null || currentSelectedLekka == null) {
                         val defaultChildTable = childLekkasList.find { it.isDefault } ?: childLekkasList.firstOrNull()
                         defaultChildTable?.let {
                             _selectedLekkaId.value = it.id
@@ -374,13 +379,7 @@ class ExpenseViewModel(
     }
 
     fun selectLekka(id: Long) {
-        val selected = allLekkas.value.find { it.id == id }
-        if (selected != null && selected.isMotherTable) {
-            val defaultChild = childLekkas.value.find { it.isDefault } ?: childLekkas.value.firstOrNull()
-            defaultChild?.let { _selectedLekkaId.value = it.id }
-        } else {
-            _selectedLekkaId.value = id
-        }
+        _selectedLekkaId.value = id
     }
 
     fun setDefaultLekka(lekkaId: Long) {

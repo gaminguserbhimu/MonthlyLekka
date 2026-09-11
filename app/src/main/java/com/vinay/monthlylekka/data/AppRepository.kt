@@ -22,7 +22,9 @@ class AppRepository(
 
     fun getExpensesWithCategoryAndLekka(lekkaId: Long): Flow<List<ExpenseWithCategoryAndLekka>> = expenseDao.getExpensesWithCategoryAndLekka(lekkaId)
 
-    fun getAllExpensesWithCategoryAndLekka(): Flow<List<ExpenseWithCategoryAndLekka>> = expenseDao.getAllExpensesWithCategoryAndLekka()
+    fun getAllExpensesWithCategoryAndLekka(): Flow<List<ExpenseWithCategoryAndLekka>> = getAllExpensesWithCategoryAndLekkaFlow()
+
+    fun getAllExpensesWithCategoryAndLekkaFlow(): Flow<List<ExpenseWithCategoryAndLekka>> = expenseDao.getAllExpensesWithCategoryAndLekka()
 
     fun getAllExpenses(): Flow<List<Expense>> = expenseDao.getAllExpensesList()
     

@@ -1366,8 +1366,11 @@ fun YearlyChartsSlide(
             .sortedByDescending { it.year }
     }
 
-    val availableYears = remember(yearlySummaries) {
-        yearlySummaries.map { it.year }.ifEmpty { listOf(LocalDate.now().year.toString()) }
+    val availableYears = remember(expenses, yearlySummaries) {
+        val expenseYears = expenses.map { it.expense.date.year.toString() }.distinct()
+        val summaryYears = yearlySummaries.map { it.year }
+        (expenseYears + summaryYears).distinct().sortedDescending()
+            .ifEmpty { listOf(LocalDate.now().year.toString()) }
     }
 
     var selectedYear by remember(availableYears) {
