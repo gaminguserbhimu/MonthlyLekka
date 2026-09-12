@@ -35,6 +35,7 @@ import com.vinay.monthlylekka.ui.CategoryManagementScreen
 import com.vinay.monthlylekka.ui.HelpScreen
 import com.vinay.monthlylekka.ui.OnboardingScreen
 import com.vinay.monthlylekka.ui.Route
+import com.vinay.monthlylekka.ui.SplashScreen
 import com.vinay.monthlylekka.ui.TableDetailScreen
 import com.vinay.monthlylekka.ui.TablesScreen
 import com.vinay.monthlylekka.ui.WelcomeScreen
@@ -62,9 +63,7 @@ class MainActivity : ComponentActivity() {
                 val viewModel: ExpenseViewModel = viewModel(
                     factory = ExpenseViewModelFactory(app.repository, app.userPreferences)
                 )
-                val initialRoute = remember {
-                    if (app.userPreferences.isFirstLaunch) Route.Onboarding else Route.Welcome
-                }
+                val initialRoute = remember { Route.Splash }
                 var backStack by rememberSaveable { mutableStateOf(listOf<Route>(initialRoute)) }
                 val startDestination by remember { startDestinationState }
                 val allLekkasWithSummary by viewModel.allLekkasWithSummary.collectAsState()
@@ -123,11 +122,11 @@ class MainActivity : ComponentActivity() {
                         is Route.Dashboard -> navigator.navigateTo(ListDetailPaneScaffoldRole.List)
                         is Route.TableDetail -> navigator.navigateTo(ListDetailPaneScaffoldRole.List)
                         is Route.Tables -> navigator.navigateTo(ListDetailPaneScaffoldRole.List)
-                        is Route.Welcome, is Route.Onboarding -> { /* Full screen */ }
+                        is Route.Welcome, is Route.Onboarding, is Route.Splash -> { /* Full screen */ }
                     }
                 }
 
-                if (navigator.scaffoldDirective.maxHorizontalPartitions > 1 && backStack.last() !is Route.Welcome && backStack.last() !is Route.Onboarding) {
+                if (navigator.scaffoldDirective.maxHorizontalPartitions > 1 && backStack.last() !is Route.Welcome && backStack.last() !is Route.Onboarding && backStack.last() !is Route.Splash) {
                     ListDetailPaneScaffold(
                         directive = navigator.scaffoldDirective,
                         value = navigator.scaffoldValue,
@@ -469,6 +468,18 @@ class MainActivity : ComponentActivity() {
                                         onImportBackup = { uri -> viewModel.importBackupFromUri(context, uri) },
                                         currencySymbol = currencySymbol,
                                         onUpdateCurrencySymbol = viewModel::updateCurrencySymbol
+                                    )
+                                }
+                                is Route.Splash -> NavEntry(key) {
+                                    SplashScreen(
+                                        onSplashFinished = {
+                                            val targetRoute = if (app.userPreferences.isFirstLaunch) Route.Onboarding else Route.Welcome
+                                            if (backStack.size > 1 && backStack.first() is Route.Splash) {
+                                                backStack = listOf(targetRoute) + backStack.drop(1)
+                                            } else {
+                                                backStack = listOf(targetRoute)
+                                            }
+                                        }
                                     )
                                 }
                                 is Route.Onboarding -> NavEntry(key) {

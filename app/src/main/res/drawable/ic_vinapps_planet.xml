@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Outer Glow Orbit Ring -->
+    <path
+        android:pathData="M 20,60 C 20,38 40,24 60,24 C 80,24 100,38 100,60 C 100,82 80,96 60,96 C 40,96 20,82 20,60 Z"
+        android:strokeColor="#34D399"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.4" />
+
+    <!-- Planet Back Ring -->
+    <path
+        android:pathData="M 22,52 C 22,42 42,34 66,34 C 86,34 102,40 102,50 C 102,54 92,58 78,60"
+        android:strokeColor="#6EE7B7"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+
+    <!-- Planet Core Base -->
+    <path
+        android:pathData="M 60,60 m -30,0 a 30,30 0 1,0 60,0 a 30,30 0 1,0 -60,0"
+        android:fillColor="#047857" />
+
+    <!-- Planet Gradient Body -->
+    <path
+        android:pathData="M 60,60 m -28,0 a 28,28 0 1,0 56,0 a 28,28 0 1,0 -56,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="32"
+                android:startY="32"
+                android:endX="88"
+                android:endY="88"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#34D399" />
+                <item android:offset="0.4" android:color="#10B981" />
+                <item android:offset="1.0" android:color="#022C22" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Planet Surface Shading / Metallic Stripe -->
+    <path
+        android:pathData="M 34,50 C 46,58 74,58 86,50 C 84,62 74,72 60,72 C 46,72 36,62 34,50 Z"
+        android:fillColor="#064E3B"
+        android:fillAlpha="0.45" />
+
+    <!-- Planet Front Ring Outer -->
+    <path
+        android:pathData="M 12,68 C 12,56 36,46 64,46 C 88,46 106,54 110,64 C 112,68 106,72 94,76 C 76,82 46,82 26,78 C 16,75 12,71 12,68 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="12"
+                android:startY="60"
+                android:endX="110"
+                android:endY="60"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#A7F3D0" />
+                <item android:offset="0.5" android:color="#10B981" />
+                <item android:offset="1.0" android:color="#34D399" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Planet Front Ring Inner Cutout -->
+    <path
+        android:pathData="M 18,68 C 18,59 38,50 64,50 C 84,50 98,56 101,64 C 102,66 98,69 88,72 C 72,77 46,77 28,74 C 21,72 18,70 18,68 Z"
+        android:fillColor="#022C22"
+        android:fillAlpha="0.7" />
+
+    <!-- Ring Rim Highlight -->
+    <path
+        android:pathData="M 12,68 C 12,56 36,46 64,46 C 88,46 106,54 110,64 C 112,68 106,72 94,76 C 76,82 46,82 26,78 C 16,75 12,71 12,68 Z"
+        android:strokeColor="#ECFDF5"
+        android:strokeWidth="1.2"
+        android:strokeAlpha="0.85" />
+
+    <!-- Sparkling Stars & Accents -->
+    <path
+        android:pathData="M 96,26 L 98,31 L 103,33 L 98,35 L 96,40 L 94,35 L 89,33 L 94,31 Z"
+        android:fillColor="#A7F3D0" />
+    <path
+        android:pathData="M 30,22 L 31,25 L 34,26 L 31,27 L 30,30 L 29,27 L 26,26 L 29,25 Z"
+        android:fillColor="#6EE7B7" />
+    <path
+        android:pathData="M 28,94 m -2.5,0 a 2.5,2.5 0 1,0 5,0 a 2.5,2.5 0 1,0 -5,0"
+        android:fillColor="#A7F3D0" />
+    <path
+        android:pathData="M 92,88 m -2,0 a 2,2 0 1,0 4,0 a 2,2 0 1,0 -4,0"
+        android:fillColor="#34D399" />
+</vector>
