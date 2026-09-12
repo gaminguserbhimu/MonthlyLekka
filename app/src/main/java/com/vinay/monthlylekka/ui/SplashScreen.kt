@@ -66,8 +66,9 @@ fun SplashScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF022C22),
-                        Color(0xFF064E3B)
+                        Color(0xFF0F172A),
+                        Color(0xFF1E1B4B),
+                        Color(0xFF0F172A)
                     )
                 )
             ),
@@ -105,7 +106,7 @@ fun SplashScreen(
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Medium
                 ),
-                color = Color(0xFFA7F3D0)
+                color = Color(0xFF38BDF8)
             )
         }
 
@@ -121,7 +122,7 @@ fun SplashScreen(
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.Normal
                 ),
-                color = Color(0xFF6EE7B7).copy(alpha = 0.85f)
+                color = Color(0xFFC084FC)
             )
         }
     }

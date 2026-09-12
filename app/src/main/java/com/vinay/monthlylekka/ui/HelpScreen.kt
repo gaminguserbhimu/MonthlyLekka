@@ -3,6 +3,7 @@ package com.vinay.monthlylekka.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -705,8 +706,9 @@ private fun AboutVinAppsCard() {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            containerColor = Color(0xFF1E1B4B)
         ),
+        border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.5f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -731,20 +733,20 @@ private fun AboutVinAppsCard() {
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
                         ),
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = Color.White
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Crafting Smart Mobile Solutions",
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color(0xFF38BDF8)
                     )
                 }
             }
 
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = 4.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)
+                color = Color(0xFF38BDF8).copy(alpha = 0.2f)
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -755,12 +757,12 @@ private fun AboutVinAppsCard() {
                     Text(
                         text = "Developer Credits:",
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = Color.White.copy(alpha = 0.9f)
                     )
                     Text(
                         text = "Developed with ❤️ by VinApps",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                        color = Color(0xFFC084FC)
                     )
                 }
 
@@ -771,12 +773,12 @@ private fun AboutVinAppsCard() {
                     Text(
                         text = "App Version:",
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = Color.White.copy(alpha = 0.9f)
                     )
                     Text(
                         text = "Monthly Expenses v1.0.2",
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color(0xFFC084FC)
                     )
                 }
 
@@ -784,7 +786,7 @@ private fun AboutVinAppsCard() {
 
                 Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                    color = Color(0xFF0F172A).copy(alpha = 0.7f),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -803,13 +805,13 @@ private fun AboutVinAppsCard() {
                             Text(
                                 text = "Privacy Statement",
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = Color.White
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "100% Offline & Private. Your financial data is stored securely on your local device only and is never transmitted to external servers.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = Color.White.copy(alpha = 0.8f)
                             )
                         }
                     }
