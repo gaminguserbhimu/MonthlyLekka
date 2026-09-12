@@ -474,11 +474,11 @@ fun SelectChildTableDialog(
 fun DashboardPreview() {
     val dummyCategories = listOf(
         Category(id = 1, lekkaId = 1, name = "Income", colorHex = "#2E7D32", isIncome = true),
-        Category(id = 2, lekkaId = 1, name = "Kirani", colorHex = "#FFB300", isIncome = false)
+        Category(id = 2, lekkaId = 1, name = "Groceries", colorHex = "#FFB300", isIncome = false)
     )
     val dummyExpenses = listOf(
         ExpenseWithCategoryAndLekka(Expense(id = 1, lekkaId = 1, description = "Salary", amount = 50000.0, categoryId = 1, date = LocalDate.now()), dummyCategories[0], "Monthly Lekka"),
-        ExpenseWithCategoryAndLekka(Expense(id = 2, lekkaId = 2, description = "Kirani Items", amount = 1200.0, categoryId = 2, date = LocalDate.now()), dummyCategories[1], "Goa Trip")
+        ExpenseWithCategoryAndLekka(Expense(id = 2, lekkaId = 2, description = "Groceries Items", amount = 1200.0, categoryId = 2, date = LocalDate.now()), dummyCategories[1], "Goa Trip")
     )
     MonthlyLekkaTheme {
         DashboardScreen(

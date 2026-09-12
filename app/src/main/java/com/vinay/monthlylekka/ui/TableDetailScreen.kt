@@ -2220,7 +2220,7 @@ fun SelectChildTableDialogForDetail(
 @Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
 @Composable
 fun TableDetailScreenPreview() {
-    val dummyCategory = Category(id = 1, lekkaId = 1, name = "Kirani", colorHex = "#FFB300", isIncome = false)
+    val dummyCategory = Category(id = 1, lekkaId = 1, name = "Groceries", colorHex = "#FFB300", isIncome = false)
     val dummyExpense = ExpenseWithCategoryAndLekka(
         expense = Expense(id = 1, lekkaId = 1, description = "Milk & Rice", amount = 450.0, categoryId = 1, date = LocalDate.now()),
         category = dummyCategory,

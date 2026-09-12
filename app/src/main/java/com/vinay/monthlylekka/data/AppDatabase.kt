@@ -30,8 +30,8 @@ abstract class AppDatabase : RoomDatabase() {
 
         val categories = listOf(
             Category(lekkaId = defaultChildLekkaId, name = "Income", colorHex = "#2E7D32", isIncome = true),
-            Category(lekkaId = defaultChildLekkaId, name = "Kirani", colorHex = "#FFB300", isIncome = false),
-            Category(lekkaId = defaultChildLekkaId, name = "Kaipalle", colorHex = "#43A047", isIncome = false),
+            Category(lekkaId = defaultChildLekkaId, name = "Groceries", colorHex = "#FFB300", isIncome = false),
+            Category(lekkaId = defaultChildLekkaId, name = "Vegetables", colorHex = "#43A047", isIncome = false),
             Category(lekkaId = defaultChildLekkaId, name = "Food", colorHex = "#E53935", isIncome = false),
             Category(lekkaId = defaultChildLekkaId, name = "Bills", colorHex = "#3949AB", isIncome = false),
             Category(lekkaId = defaultChildLekkaId, name = "Others", colorHex = "#757575", isIncome = false),

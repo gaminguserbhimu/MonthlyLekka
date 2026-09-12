@@ -76,7 +76,7 @@ class TableDetailTest {
 
     @Test
     fun categoryBreakdown_groupsMonthlyAndYearlyExpensesCorrectly() {
-        val cat1 = com.vinay.monthlylekka.data.Category(id = 1, lekkaId = 1, name = "Kirani", colorHex = "#FFB300", isIncome = false)
+        val cat1 = Category(id = 1, lekkaId = 1, name = "Groceries", colorHex = "#FFB300", isIncome = false)
         val cat2 = com.vinay.monthlylekka.data.Category(id = 2, lekkaId = 1, name = "Food", colorHex = "#E53935", isIncome = false)
 
         val exp1 = com.vinay.monthlylekka.data.ExpenseWithCategoryAndLekka(
@@ -95,7 +95,7 @@ class TableDetailTest {
             lekkaName = "Monthly Lekka"
         )
         val exp4 = com.vinay.monthlylekka.data.ExpenseWithCategoryAndLekka(
-            expense = com.vinay.monthlylekka.data.Expense(id = 4, lekkaId = 1, description = "Kirani Old", amount = 3000.0, categoryId = 1, date = java.time.LocalDate.of(2025, 12, 20)),
+            expense = Expense(id = 4, lekkaId = 1, description = "Groceries Old", amount = 3000.0, categoryId = 1, date = LocalDate.of(2025, 12, 20)),
             category = cat1,
             lekkaName = "Monthly Lekka"
         )
@@ -108,7 +108,7 @@ class TableDetailTest {
             .mapValues { entry -> entry.value.sumOf { it.expense.amount } }
 
         assertEquals(2, sep2026CategoryMap.size)
-        assertEquals(1500.0, sep2026CategoryMap["Kirani"] ?: 0.0, 0.01)
+        assertEquals(1500.0, sep2026CategoryMap["Groceries"] ?: 0.0, 0.01)
         assertEquals(2000.0, sep2026CategoryMap["Food"] ?: 0.0, 0.01)
         assertEquals(3500.0, sep2026CategoryMap.values.sum(), 0.01)
 
@@ -118,7 +118,7 @@ class TableDetailTest {
             .mapValues { entry -> entry.value.sumOf { it.expense.amount } }
 
         assertEquals(2, year2026CategoryMap.size)
-        assertEquals(1500.0, year2026CategoryMap["Kirani"] ?: 0.0, 0.01)
+        assertEquals(1500.0, year2026CategoryMap["Groceries"] ?: 0.0, 0.01)
         assertEquals(2000.0, year2026CategoryMap["Food"] ?: 0.0, 0.01)
         assertEquals(3500.0, year2026CategoryMap.values.sum(), 0.01)
     }

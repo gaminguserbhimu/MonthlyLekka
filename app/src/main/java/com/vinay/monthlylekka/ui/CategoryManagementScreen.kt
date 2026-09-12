@@ -248,7 +248,7 @@ fun CategoryManagementPreview() {
     val dummyCategories = listOf(
         Category(id = 1, lekkaId = 1, name = "Income", colorHex = "#2E7D32", isIncome = true),
         Category(id = 2, lekkaId = 1, name = "Food", colorHex = "#E53935", isIncome = false),
-        Category(id = 3, lekkaId = 1, name = "Kirani", colorHex = "#FFB300", isIncome = false)
+        Category(id = 3, lekkaId = 1, name = "Groceries", colorHex = "#FFB300", isIncome = false)
     )
     MonthlyLekkaTheme {
         CategoryManagementScreen(

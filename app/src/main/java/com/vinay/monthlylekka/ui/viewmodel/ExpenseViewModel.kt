@@ -337,6 +337,14 @@ class ExpenseViewModel(
         CurrencyUtils.activeCurrencySymbol = userPreferences.currencySymbol
         viewModelScope.launch(ioDispatcher) {
             repository.updateMotherTableName()
+            val categoriesToClean = repository.getAllCategoriesDirect()
+            categoriesToClean.forEach { category ->
+                if (category.name.equals("kaipalle", ignoreCase = true)) {
+                    repository.updateCategory(category.copy(name = "Vegetables"))
+                } else if (category.name.equals("kirani", ignoreCase = true)) {
+                    repository.updateCategory(category.copy(name = "Groceries"))
+                }
+            }
             allLekkas.collect { lekkas ->
                 if (lekkas.isEmpty()) {
                     repository.populateDatabase()

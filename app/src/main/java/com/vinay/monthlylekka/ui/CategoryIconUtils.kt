@@ -26,8 +26,8 @@ import androidx.core.graphics.toColorInt
 
 fun getCategoryIcon(categoryName: String, isIncome: Boolean = false): ImageVector {
     return when (categoryName.lowercase().trim()) {
-        "kirani" -> Icons.Rounded.ShoppingCart
-        "kaipalle" -> Icons.Rounded.ShoppingBag
+        "groceries", "kirani" -> Icons.Rounded.ShoppingCart
+        "vegetables", "kaipalle" -> Icons.Rounded.ShoppingBag
         "food" -> Icons.Rounded.Restaurant
         "bills" -> Icons.AutoMirrored.Rounded.ReceiptLong
         "travel" -> Icons.Rounded.DirectionsCar

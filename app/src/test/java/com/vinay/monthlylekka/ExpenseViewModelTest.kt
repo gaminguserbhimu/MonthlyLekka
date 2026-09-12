@@ -119,6 +119,8 @@ class ExpenseViewModelTest {
 
         override fun getAllCategoriesList(): Flow<List<Category>> = categories
 
+        override suspend fun getAllCategoriesDirect(): List<Category> = categories.value
+
         override suspend fun insertCategory(category: Category) {
             val id = if (category.id == 0L) nextId++ else category.id
             categories.value = categories.value + category.copy(id = id)
@@ -488,8 +490,8 @@ class ExpenseViewModelTest {
         assertEquals(8, categories.size)
 
         val categoryNames = categories.map { it.name }
-        assertTrue(categoryNames.contains("Kirani"))
-        assertTrue(categoryNames.contains("Kaipalle"))
+        assertTrue(categoryNames.contains("Groceries"))
+        assertTrue(categoryNames.contains("Vegetables"))
         assertTrue(categoryNames.contains("Food"))
         assertTrue(categoryNames.contains("Bills"))
         assertTrue(categoryNames.contains("Others"))
@@ -763,9 +765,30 @@ class ExpenseViewModelTest {
 
         val categoriesInDb = fakeCategoryDao.getAllCategories(emptyLekkaId).first()
         assertEquals(8, categoriesInDb.size)
-        assertTrue(categoriesInDb.any { it.name == "Kirani" })
+        assertTrue(categoriesInDb.any { it.name == "Groceries" })
         assertTrue(categoriesInDb.any { it.name == "Food" })
         collectorJob.cancel()
+    }
+
+    @Test
+    fun init_renamesKannadaCategoriesToStandardEnglish() = runTest {
+        val fakeLekkaDao = FakeLekkaDao()
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+
+        val legacyKirani = Category(id = 10, lekkaId = 1, name = "Kirani", colorHex = "#FFB300", isIncome = false)
+        val legacyKaipalle = Category(id = 11, lekkaId = 1, name = "kaipalle", colorHex = "#43A047", isIncome = false)
+        fakeCategoryDao.insertCategory(legacyKirani)
+        fakeCategoryDao.insertCategory(legacyKaipalle)
+
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+        advanceUntilIdle()
+
+        val updatedKirani = fakeCategoryDao.getCategoryById(10)
+        val updatedKaipalle = fakeCategoryDao.getCategoryById(11)
+        assertEquals("Groceries", updatedKirani?.name)
+        assertEquals("Vegetables", updatedKaipalle?.name)
     }
 
     @Test

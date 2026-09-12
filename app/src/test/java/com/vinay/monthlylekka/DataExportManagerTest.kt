@@ -49,7 +49,7 @@ class DataExportManagerTest {
         )
         val categories = listOf(
             Category(id = 10, lekkaId = 2, name = "Income", colorHex = "#2E7D32", isIncome = true),
-            Category(id = 11, lekkaId = 2, name = "Kirani", colorHex = "#FFB300", isIncome = false)
+            Category(id = 11, lekkaId = 2, name = "Groceries", colorHex = "#FFB300", isIncome = false)
         )
         val expenses = listOf(
             Expense(id = 100, lekkaId = 2, description = "Groceries", amount = 1200.0, categoryId = 11, date = LocalDate.of(2026, 3, 15))
@@ -67,7 +67,7 @@ class DataExportManagerTest {
         assertEquals(1, parsedBackup.expenses.size)
 
         assertEquals("Monthly Expenses", parsedBackup.tables[1].name)
-        assertEquals("Kirani", parsedBackup.categories[1].name)
+        assertEquals("Groceries", parsedBackup.categories[1].name)
         assertEquals("Groceries", parsedBackup.expenses[0].description)
         assertEquals(LocalDate.of(2026, 3, 15), parsedBackup.expenses[0].date)
     }

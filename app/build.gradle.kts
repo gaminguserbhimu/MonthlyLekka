@@ -16,8 +16,8 @@ android {
         applicationId = "com.vinay.monthlylekka"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "1.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -28,6 +28,9 @@ android {
             storePassword = "MonthlyLekka2026!"
             keyAlias = "monthlylekka"
             keyPassword = "MonthlyLekka2026!"
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
         }
     }
 

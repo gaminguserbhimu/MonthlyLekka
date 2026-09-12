@@ -17,6 +17,10 @@ class AppRepository(
     fun getCategoriesByLekka(lekkaId: Long): Flow<List<Category>> = categoryDao.getCategoriesByLekka(lekkaId)
 
     fun getAllCategories(): Flow<List<Category>> = categoryDao.getAllCategoriesList()
+
+    suspend fun getAllCategoriesDirect(): List<Category> = withContext(ioDispatcher) {
+        categoryDao.getAllCategoriesDirect()
+    }
     
     fun getExpensesByLekka(lekkaId: Long): Flow<List<ExpenseWithCategory>> = expenseDao.getExpensesWithCategory(lekkaId)
 
@@ -46,8 +50,8 @@ class AppRepository(
 
                 val categories = listOf(
                     Category(lekkaId = defaultChildLekkaId, name = "Income", colorHex = "#2E7D32", isIncome = true),
-                    Category(lekkaId = defaultChildLekkaId, name = "Kirani", colorHex = "#FFB300", isIncome = false),
-                    Category(lekkaId = defaultChildLekkaId, name = "Kaipalle", colorHex = "#43A047", isIncome = false),
+                    Category(lekkaId = defaultChildLekkaId, name = "Groceries", colorHex = "#FFB300", isIncome = false),
+                    Category(lekkaId = defaultChildLekkaId, name = "Vegetables", colorHex = "#43A047", isIncome = false),
                     Category(lekkaId = defaultChildLekkaId, name = "Food", colorHex = "#E53935", isIncome = false),
                     Category(lekkaId = defaultChildLekkaId, name = "Bills", colorHex = "#3949AB", isIncome = false),
                     Category(lekkaId = defaultChildLekkaId, name = "Others", colorHex = "#757575", isIncome = false),
@@ -76,8 +80,8 @@ class AppRepository(
 
             val categories = listOf(
                 Category(lekkaId = defaultChildLekkaId, name = "Income", colorHex = "#2E7D32", isIncome = true),
-                Category(lekkaId = defaultChildLekkaId, name = "Kirani", colorHex = "#FFB300", isIncome = false),
-                Category(lekkaId = defaultChildLekkaId, name = "Kaipalle", colorHex = "#43A047", isIncome = false),
+                Category(lekkaId = defaultChildLekkaId, name = "Groceries", colorHex = "#FFB300", isIncome = false),
+                Category(lekkaId = defaultChildLekkaId, name = "Vegetables", colorHex = "#43A047", isIncome = false),
                 Category(lekkaId = defaultChildLekkaId, name = "Food", colorHex = "#E53935", isIncome = false),
                 Category(lekkaId = defaultChildLekkaId, name = "Bills", colorHex = "#3949AB", isIncome = false),
                 Category(lekkaId = defaultChildLekkaId, name = "Others", colorHex = "#757575", isIncome = false),
