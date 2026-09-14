@@ -10,6 +10,8 @@ import com.vinay.monthlylekka.ui.toCurrencyString
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.math.abs
 
 class TableDetailTest {
@@ -249,6 +251,36 @@ class TableDetailTest {
         val expWithNormalDesc = Expense(id = 3, lekkaId = 1, description = "Snacks", amount = 100.0, categoryId = 2, date = LocalDate.now())
         val displayText3 = expWithNormalDesc.description.ifBlank { foodCat.name }
         assertEquals("Snacks", displayText3)
+    }
+
+    @Test
+    fun filterTab_baseDateAndDurationCalculatesEndDateAndRangeBadgeCorrectly() {
+        val baseDate = LocalDate.of(2026, 9, 12)
+
+        // 1 Day (Today)
+        val selectedDays1 = 1
+        val endDate1 = baseDate.plusDays((selectedDays1 - 1).toLong())
+        assertEquals(LocalDate.of(2026, 9, 12), endDate1)
+
+        val badgeFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.US)
+        val dayLabel1 = if (selectedDays1 == 1) "1 Day" else "$selectedDays1 Days"
+        val startStr1 = baseDate.format(badgeFormatter)
+        val endStr1 = endDate1.format(badgeFormatter)
+        val rangeStr1 = if (baseDate == endDate1) startStr1 else "$startStr1 – $endStr1"
+        val badgeText1 = "Showing $dayLabel1: $rangeStr1"
+        assertEquals("Showing 1 Day: Sep 12, 2026", badgeText1)
+
+        // 3 Days
+        val selectedDays3 = 3
+        val endDate3 = baseDate.plusDays((selectedDays3 - 1).toLong())
+        assertEquals(LocalDate.of(2026, 9, 14), endDate3)
+
+        val dayLabel3 = if (selectedDays3 == 1) "1 Day" else "$selectedDays3 Days"
+        val startStr3 = baseDate.format(badgeFormatter)
+        val endStr3 = endDate3.format(badgeFormatter)
+        val rangeStr3 = if (baseDate == endDate3) startStr3 else "$startStr3 – $endStr3"
+        val badgeText3 = "Showing $dayLabel3: $rangeStr3"
+        assertEquals("Showing 3 Days: Sep 12, 2026 – Sep 14, 2026", badgeText3)
     }
 }
 

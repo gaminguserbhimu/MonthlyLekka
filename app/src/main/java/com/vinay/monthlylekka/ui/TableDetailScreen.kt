@@ -7,13 +7,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.List
@@ -1779,8 +1783,10 @@ fun YearSelectorDropdown(
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 5: CUSTOM DATE RANGE FILTER
+// SLIDE 5: BASE DATE & DURATION FILTER ANALYTICS
 // ---------------------------------------------------------------------------
+data class DurationOption(val label: String, val days: Int?)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterTabSlide(
@@ -1790,15 +1796,49 @@ fun FilterTabSlide(
     onDeleteExpense: (ExpenseWithCategoryAndLekka) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var fromDate by remember { mutableStateOf(LocalDate.now().minusDays(30)) }
-    var toDate by remember { mutableStateOf(LocalDate.now()) }
+    var baseDate by remember { mutableStateOf(LocalDate.now()) }
+    var numberOfDays by remember { mutableIntStateOf(1) }
     var selectedCategoryName by remember { mutableStateOf("All Categories") }
 
-    var showFromDatePicker by remember { mutableStateOf(false) }
-    var showToDatePicker by remember { mutableStateOf(false) }
+    var showBaseDatePicker by remember { mutableStateOf(false) }
+    var showCustomDaysDialog by remember { mutableStateOf(false) }
+    var customDaysInputText by remember { mutableStateOf("1") }
+
+    var durationDropdownExpanded by remember { mutableStateOf(false) }
     var categoryDropdownExpanded by remember { mutableStateOf(false) }
 
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
+    val badgeDateFormatter = remember { DateTimeFormatter.ofPattern("MMM dd, yyyy") }
+
+    val endDate = remember(baseDate, numberOfDays) {
+        baseDate.plusDays((numberOfDays - 1).toLong())
+    }
+
+    val durationOptions = remember {
+        listOf(
+            DurationOption("1 Day (Today)", 1),
+            DurationOption("2 Days", 2),
+            DurationOption("3 Days", 3),
+            DurationOption("5 Days", 5),
+            DurationOption("7 Days (1 Week)", 7),
+            DurationOption("14 Days", 14),
+            DurationOption("30 Days", 30),
+            DurationOption("Custom Days...", null)
+        )
+    }
+
+    val selectedDurationLabel = remember(numberOfDays) {
+        when (numberOfDays) {
+            1 -> "1 Day (Today)"
+            2 -> "2 Days"
+            3 -> "3 Days"
+            5 -> "5 Days"
+            7 -> "7 Days (1 Week)"
+            14 -> "14 Days"
+            30 -> "30 Days"
+            else -> "Custom ($numberOfDays Days)"
+        }
+    }
 
     val categoryOptions = remember(expenses) {
         listOf("All Categories") + expenses.map { it.category.name }.distinct().sorted()
@@ -1810,28 +1850,26 @@ fun FilterTabSlide(
         }
     }
 
-    if (showFromDatePicker) {
+    // Base Date Picker Dialog
+    if (showBaseDatePicker) {
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = fromDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+            initialSelectedDateMillis = baseDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
         )
         DatePickerDialog(
-            onDismissRequest = { showFromDatePicker = false },
+            onDismissRequest = { showBaseDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
                         val selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                        fromDate = selectedDate
-                        if (fromDate.isAfter(toDate)) {
-                            toDate = fromDate
-                        }
+                        baseDate = selectedDate
                     }
-                    showFromDatePicker = false
+                    showBaseDatePicker = false
                 }) {
                     Text("OK")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showFromDatePicker = false }) {
+                TextButton(onClick = { showBaseDatePicker = false }) {
                     Text("Cancel")
                 }
             }
@@ -1840,40 +1878,62 @@ fun FilterTabSlide(
         }
     }
 
-    if (showToDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = toDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-        )
-        DatePickerDialog(
-            onDismissRequest = { showToDatePicker = false },
+    // Custom Days Input Dialog
+    if (showCustomDaysDialog) {
+        AlertDialog(
+            onDismissRequest = { showCustomDaysDialog = false },
+            title = {
+                Text(
+                    text = "Enter Custom Days",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Specify the duration (number of days) from the Base Date:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    OutlinedTextField(
+                        value = customDaysInputText,
+                        onValueChange = { input ->
+                            customDaysInputText = input.filter { it.isDigit() }
+                        },
+                        label = { Text("Number of Days") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
             confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                        toDate = selectedDate
-                        if (toDate.isBefore(fromDate)) {
-                            fromDate = toDate
+                TextButton(
+                    onClick = {
+                        val parsedDays = customDaysInputText.toIntOrNull()
+                        if (parsedDays != null && parsedDays > 0) {
+                            numberOfDays = parsedDays
                         }
+                        showCustomDaysDialog = false
                     }
-                    showToDatePicker = false
-                }) {
-                    Text("OK")
+                ) {
+                    Text("Apply")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showToDatePicker = false }) {
+                TextButton(onClick = { showCustomDaysDialog = false }) {
                     Text("Cancel")
                 }
             }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        )
     }
 
-    val filteredExpenses = remember(expenses, fromDate, toDate, selectedCategoryName) {
+    val filteredExpenses = remember(expenses, baseDate, endDate, selectedCategoryName) {
         expenses.filter { item ->
             val d = item.expense.date
-            val inDateRange = !d.isBefore(fromDate) && !d.isAfter(toDate)
+            val inDateRange = !d.isBefore(baseDate) && !d.isAfter(endDate)
             val matchesCategory = selectedCategoryName == "All Categories" || item.category.name == selectedCategoryName
             inDateRange && matchesCategory
         }
@@ -1898,20 +1958,40 @@ fun FilterTabSlide(
                         .padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        text = "Filter Options",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
+                    // Header Row with Title and Quick "📅 Today" Button
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // From Date Selector Card
+                        Text(
+                            text = "Filter Options",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        AssistChip(
+                            onClick = {
+                                baseDate = LocalDate.now()
+                                numberOfDays = 1
+                            },
+                            label = { Text("📅 Today") },
+                            colors = AssistChipDefaults.assistChipColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
+                                labelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        )
+                    }
+
+                    // Base Date & Duration Selector Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Base Date Selector Card
                         Surface(
-                            onClick = { showFromDatePicker = true },
+                            onClick = { showBaseDatePicker = true },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
@@ -1924,55 +2004,137 @@ fun FilterTabSlide(
                             ) {
                                 Column {
                                     Text(
-                                        text = "From Date",
+                                        text = "Base Date",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                                     )
                                     Text(
-                                        text = fromDate.format(dateFormatter),
+                                        text = baseDate.format(dateFormatter),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
                                 Icon(
                                     imageVector = Icons.Rounded.DateRange,
-                                    contentDescription = "Select From Date",
+                                    contentDescription = "Select Base Date",
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
 
-                        // To Date Selector Card
-                        Surface(
-                            onClick = { showToDatePicker = true },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        // Duration Dropdown Selector
+                        ExposedDropdownMenuBox(
+                            expanded = durationDropdownExpanded,
+                            onExpandedChange = { durationDropdownExpanded = !durationDropdownExpanded },
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                            OutlinedTextField(
+                                value = selectedDurationLabel,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Duration") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = durationDropdownExpanded) },
+                                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                modifier = Modifier
+                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                    .fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = durationDropdownExpanded,
+                                onDismissRequest = { durationDropdownExpanded = false }
                             ) {
-                                Column {
-                                    Text(
-                                        text = "To Date",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                                    )
-                                    Text(
-                                        text = toDate.format(dateFormatter),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
+                                durationOptions.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = { Text(option.label) },
+                                        onClick = {
+                                            durationDropdownExpanded = false
+                                            if (option.days != null) {
+                                                numberOfDays = option.days
+                                            } else {
+                                                customDaysInputText = numberOfDays.toString()
+                                                showCustomDaysDialog = true
+                                            }
+                                        }
                                     )
                                 }
-                                Icon(
-                                    imageVector = Icons.Rounded.DateRange,
-                                    contentDescription = "Select To Date",
-                                    modifier = Modifier.size(20.dp)
-                                )
                             }
+                        }
+                    }
+
+                    // Quick Duration Selection Chips Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val chipOptions = listOf(
+                            1 to "1D (Today)",
+                            2 to "2D",
+                            3 to "3D",
+                            5 to "5D",
+                            7 to "1W",
+                            14 to "2W",
+                            30 to "30D"
+                        )
+                        chipOptions.forEach { (days, label) ->
+                            FilterChip(
+                                selected = (numberOfDays == days),
+                                onClick = { numberOfDays = days },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            )
+                        }
+                        FilterChip(
+                            selected = chipOptions.none { it.first == numberOfDays },
+                            onClick = {
+                                customDaysInputText = numberOfDays.toString()
+                                showCustomDaysDialog = true
+                            },
+                            label = { Text("Custom...", style = MaterialTheme.typography.labelSmall) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        )
+                    }
+
+                    // Dynamic Range Badge Banner
+                    val dayLabel = if (numberOfDays == 1) "1 Day" else "$numberOfDays Days"
+                    val startStr = baseDate.format(badgeDateFormatter)
+                    val endStr = endDate.format(badgeDateFormatter)
+                    val dateRangeStr = if (baseDate == endDate) startStr else "$startStr – $endStr"
+                    val rangeBadgeBannerText = "Showing $dayLabel: $dateRangeStr"
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Event,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = rangeBadgeBannerText,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
                         }
                     }
 
