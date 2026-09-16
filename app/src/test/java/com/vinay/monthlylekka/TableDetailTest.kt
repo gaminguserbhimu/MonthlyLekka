@@ -253,7 +253,7 @@ class TableDetailTest {
     }
 
     @Test
-    fun filterTab_fromAndToDateDefaultStateAndHelperBannerCorrectly() {
+    fun filterTab_fromAndToDateDefaultStateAndDateRangeFilteringCorrectly() {
         val today = LocalDate.now()
         var fromDate = today
         var toDate = today
@@ -261,10 +261,7 @@ class TableDetailTest {
         // Default state is both fromDate and toDate equal to today
         assertEquals(fromDate, toDate)
         assertEquals(today, fromDate)
-
-        // Helper banner text check
-        val helperBannerText = "📅 Showing today's transactions by default. Tap dates to select your own custom range."
-        assertTrue(helperBannerText.contains("Showing today's transactions by default"))
+        assertTrue(fromDate.isEqual(today))
 
         // Filtering with restored from/to date range
         fromDate = LocalDate.of(2026, 9, 1)

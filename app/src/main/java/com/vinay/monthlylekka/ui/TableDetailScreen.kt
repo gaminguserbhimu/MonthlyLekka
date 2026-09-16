@@ -248,8 +248,7 @@ fun TableDetailScreen(
                         )
                     },
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(bottom = 60.dp)
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
@@ -558,7 +557,7 @@ fun TransactionsSlide(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 80.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(expenses, key = { it.expense.id }) { item ->
@@ -1889,7 +1888,7 @@ fun FilterTabSlide(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 120.dp)
+        contentPadding = PaddingValues(bottom = 80.dp)
     ) {
         // Filter Controls Header Card
         item {
@@ -2001,33 +2000,6 @@ fun FilterTabSlide(
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
-                        }
-                    }
-
-                    // Clean, Subtle Helper Banner
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Event,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = "📅 Showing today's transactions by default. Tap dates to select your own custom range.",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
                         }
                     }
 

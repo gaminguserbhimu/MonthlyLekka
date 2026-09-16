@@ -452,6 +452,22 @@ fun HelpScreen(
                 )
             }
 
+            // 💡 Filter & Date Range Tip
+            HelpSectionCard(
+                icon = Icons.Rounded.Lightbulb,
+                iconTint = MaterialTheme.colorScheme.primary,
+                title = "💡 Filter & Date Range Tip",
+                badgeText = "TIP",
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+            ) {
+                Text(
+                    text = "📅 Date Range Filtering: By default, the Filter tab displays today's transactions. You can tap 'From Date' and 'To Date' anytime to select your own custom date range.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
             // Section 5: ⚡ Quick Add & Usage-Based Sorting
             HelpSectionCard(
                 icon = Icons.Rounded.Bolt,
