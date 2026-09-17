@@ -5,6 +5,7 @@ import com.vinay.monthlylekka.data.BackupData
 import com.vinay.monthlylekka.data.Category
 import com.vinay.monthlylekka.data.CategoryDao
 import com.vinay.monthlylekka.data.CategorySpec
+import com.vinay.monthlylekka.data.CycleOption
 import com.vinay.monthlylekka.data.Expense
 import com.vinay.monthlylekka.data.ExpenseDao
 import com.vinay.monthlylekka.data.ExpenseWithCategory
@@ -890,8 +891,8 @@ class ExpenseViewModelTest {
         advanceUntilIdle()
 
         assertEquals(5, viewModel.monthStartDay.value)
-        val cycle = viewModel.selectedCycle.value
-        assertEquals(5, cycle.startDate.dayOfMonth)
+        val cycleOption = viewModel.selectedCycle.value as CycleOption.Specific
+        assertEquals(5, cycleOption.cycle.startDate.dayOfMonth)
     }
 
     @Test
@@ -932,5 +933,44 @@ class ExpenseViewModelTest {
 
         assertEquals(1, viewModel.expenses.value.size)
         assertEquals("Past", viewModel.expenses.value.first().expense.description)
+
+        // Select All Time
+        viewModel.selectCycle(CycleOption.AllTime)
+        advanceUntilIdle()
+
+        assertEquals(2, viewModel.expenses.value.size)
+    }
+
+    @Test
+    fun masterTableSummary_updatesDynamicallyWithSelectedCycle() = runTest {
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val fakeLekkaDao = FakeLekkaDao()
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.motherTableSummary.collect {}
+        }
+        advanceUntilIdle()
+
+        val childLekka = fakeLekkaDao.getAllLekkas().first().find { !it.isMotherTable }!!
+        val cat = Category(id = 1, lekkaId = childLekka.id, name = "Food", colorHex = "#FF0000", isIncome = false)
+        val currentMonthExpense = Expense(id = 1, lekkaId = childLekka.id, description = "Current", amount = 100.0, categoryId = 1, date = LocalDate.now())
+        val pastMonthExpense = Expense(id = 2, lekkaId = childLekka.id, description = "Past", amount = 200.0, categoryId = 1, date = LocalDate.now().minusMonths(2))
+
+        fakeExpenseDao.expenses.value = listOf(
+            ExpenseWithCategoryAndLekka(currentMonthExpense, cat, childLekka.name),
+            ExpenseWithCategoryAndLekka(pastMonthExpense, cat, childLekka.name)
+        )
+        advanceUntilIdle()
+
+        // By default current active cycle, master table summary expense should be 100.0
+        assertEquals(100.0, viewModel.motherTableSummary.value?.totalExpense ?: 0.0, 0.01)
+
+        // Select All Time, master table summary expense should be 300.0
+        viewModel.selectCycle(CycleOption.AllTime)
+        advanceUntilIdle()
+        assertEquals(300.0, viewModel.motherTableSummary.value?.totalExpense ?: 0.0, 0.01)
     }
 }

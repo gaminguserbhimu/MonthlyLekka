@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import com.vinay.monthlylekka.data.Category
+import com.vinay.monthlylekka.data.CycleOption
 import com.vinay.monthlylekka.data.Expense
 import com.vinay.monthlylekka.data.ExpenseWithCategoryAndLekka
 import com.vinay.monthlylekka.data.Lekka
@@ -89,9 +90,10 @@ fun TableDetailScreen(
     onDeleteExpense: (ExpenseWithCategoryAndLekka) -> Unit,
     onDeleteExpenses: ((List<ExpenseWithCategoryAndLekka>) -> Unit)? = null,
     onManageCategoriesClick: () -> Unit = {},
-    selectedCycle: MonthlyCycle? = null,
+    selectedCycle: CycleOption? = null,
+    cycleOptions: List<CycleOption> = emptyList(),
+    onSelectCycle: (CycleOption) -> Unit = {},
     pastCycles: List<MonthlyCycle> = emptyList(),
-    onSelectCycle: (MonthlyCycle) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -261,7 +263,7 @@ fun TableDetailScreen(
             // Active Cycle Selector Dropdown
             var cycleDropdownExpanded by remember { mutableStateOf(false) }
 
-            if (selectedCycle != null && pastCycles.isNotEmpty()) {
+            if (selectedCycle != null && cycleOptions.isNotEmpty()) {
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                     modifier = Modifier.fillMaxWidth()
@@ -283,7 +285,7 @@ fun TableDetailScreen(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {
                                 Text(
-                                    text = "📅 Active Cycle: ${selectedCycle.label}",
+                                    text = selectedCycle.dropdownLabel,
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -297,7 +299,7 @@ fun TableDetailScreen(
                         DropdownMenu(
                             expanded = cycleDropdownExpanded,
                             onDismissRequest = { cycleDropdownExpanded = false },
-                            modifier = Modifier.widthIn(min = 220.dp)
+                            modifier = Modifier.widthIn(min = 260.dp)
                         ) {
                             Text(
                                 text = "Select Monthly Cycle",
@@ -307,12 +309,12 @@ fun TableDetailScreen(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                             )
                             HorizontalDivider()
-                            pastCycles.forEach { cycle ->
-                                val isSelected = (cycle.startDate == selectedCycle.startDate && cycle.endDate == selectedCycle.endDate)
+                            cycleOptions.forEach { option ->
+                                val isSelected = (option == selectedCycle)
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            text = cycle.label,
+                                            text = option.dropdownLabel,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                         )
@@ -328,7 +330,7 @@ fun TableDetailScreen(
                                     },
                                     onClick = {
                                         cycleDropdownExpanded = false
-                                        onSelectCycle(cycle)
+                                        onSelectCycle(option)
                                     }
                                 )
                             }

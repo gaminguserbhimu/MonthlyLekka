@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.vinay.monthlylekka.data.AppRepository
 import com.vinay.monthlylekka.data.Category
 import com.vinay.monthlylekka.data.CategorySpec
+import com.vinay.monthlylekka.data.CycleOption
 import com.vinay.monthlylekka.data.DEFAULT_CATEGORY_SPECS
 import com.vinay.monthlylekka.data.DataExportManager
 import com.vinay.monthlylekka.data.Expense
@@ -19,6 +20,7 @@ import com.vinay.monthlylekka.data.LekkaWithSummary
 import com.vinay.monthlylekka.data.MonthlyCycle
 import com.vinay.monthlylekka.data.MonthlySummary
 import com.vinay.monthlylekka.data.UserPreferences
+import com.vinay.monthlylekka.data.getAvailableCycleOptions
 import com.vinay.monthlylekka.data.getMonthlyCycleForDate
 import com.vinay.monthlylekka.data.getPastMonthlyCycles
 import com.vinay.monthlylekka.ui.CurrencyUtils
@@ -40,6 +42,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.Collections
 
 class ExpenseViewModel(
@@ -64,10 +67,20 @@ class ExpenseViewModel(
         userPreferences.setFirstLaunchCompleted()
     }
 
-    private val _selectedCycle = MutableStateFlow(
-        getMonthlyCycleForDate(LocalDate.now(), monthStartDay.value)
+    private val _selectedCycle = MutableStateFlow<CycleOption>(
+        CycleOption.Specific(getMonthlyCycleForDate(LocalDate.now(), monthStartDay.value), isCurrent = true)
     )
-    val selectedCycle: StateFlow<MonthlyCycle> = _selectedCycle.asStateFlow()
+    val selectedCycle: StateFlow<CycleOption> = _selectedCycle.asStateFlow()
+
+    val cycleOptions: StateFlow<List<CycleOption>> = monthStartDay
+        .map { startDay ->
+            getAvailableCycleOptions(LocalDate.now(), startDay)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = getAvailableCycleOptions(LocalDate.now(), monthStartDay.value)
+        )
 
     val pastCycles: StateFlow<List<MonthlyCycle>> = monthStartDay
         .map { startDay ->
@@ -82,11 +95,17 @@ class ExpenseViewModel(
     fun updateMonthStartDay(day: Int) {
         val validDay = day.coerceIn(UserPreferences.MIN_DAY, UserPreferences.MAX_DAY)
         userPreferences.setMonthStartDay(validDay)
-        _selectedCycle.value = getMonthlyCycleForDate(LocalDate.now(), validDay)
+        _selectedCycle.value = CycleOption.Specific(getMonthlyCycleForDate(LocalDate.now(), validDay), isCurrent = true)
+    }
+
+    fun selectCycle(cycleOption: CycleOption) {
+        _selectedCycle.value = cycleOption
     }
 
     fun selectCycle(cycle: MonthlyCycle) {
-        _selectedCycle.value = cycle
+        val currentCycle = getMonthlyCycleForDate(LocalDate.now(), monthStartDay.value)
+        val isCurrent = (cycle.startDate == currentCycle.startDate && cycle.endDate == currentCycle.endDate)
+        _selectedCycle.value = CycleOption.Specific(cycle, isCurrent = isCurrent)
     }
 
     private val _selectedLekkaId = MutableStateFlow<Long?>(null)
@@ -134,11 +153,13 @@ class ExpenseViewModel(
 
     val motherTableSummary: StateFlow<LekkaSummary?> = combine(
         repository.getAllExpensesWithCategoryAndLekkaFlow(),
-        allLekkas
-    ) { allExpenses, lekkas ->
+        allLekkas,
+        selectedCycle
+    ) { allExpenses, lekkas, cycleOption ->
         val motherLekkaId = lekkas.find { it.isMotherTable }?.id ?: 0L
-        val totalIncome = allExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
-        val totalExpense = allExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
+        val filtered = allExpenses.filter { cycleOption.matchesDate(it.expense.date) }
+        val totalIncome = filtered.filter { it.category.isIncome }.sumOf { it.expense.amount }
+        val totalExpense = filtered.filter { !it.category.isIncome }.sumOf { it.expense.amount }
         LekkaSummary(
             lekkaId = motherLekkaId,
             totalIncome = totalIncome,
@@ -177,25 +198,17 @@ class ExpenseViewModel(
         allLekkas,
         repository.getAllExpensesWithCategoryAndLekkaFlow(),
         selectedCycle
-    ) { lekkas, allExpenses, cycle ->
+    ) { lekkas, allExpenses, cycleOption ->
         if (lekkas.isEmpty()) emptyList()
         else {
             lekkas.map { lekka ->
-                val summary = if (lekka.isMotherTable) {
-                    val totalIncome = allExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
-                    val totalExpense = allExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
-                    LekkaSummary(lekka.id, totalIncome, totalExpense)
-                } else {
-                    val cycleExpenses = allExpenses.filter { item ->
-                        val date = item.expense.date
-                        !date.isBefore(cycle.startDate) && !date.isAfter(cycle.endDate)
-                    }
-                    val tableExpenses = cycleExpenses.filter { it.expense.lekkaId == lekka.id }
-                    val totalIncome = tableExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
-                    val totalExpense = tableExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
-                    LekkaSummary(lekka.id, totalIncome, totalExpense)
+                val cycleExpenses = allExpenses.filter { item ->
+                    cycleOption.matchesDate(item.expense.date)
                 }
-                LekkaWithSummary(lekka, summary)
+                val tableExpenses = if (lekka.isMotherTable) cycleExpenses else cycleExpenses.filter { it.expense.lekkaId == lekka.id }
+                val totalIncome = tableExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
+                val totalExpense = tableExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
+                LekkaWithSummary(lekka, LekkaSummary(lekka.id, totalIncome, totalExpense))
             }
         }
     }.stateIn(
@@ -209,21 +222,21 @@ class ExpenseViewModel(
         _selectedLekkaId,
         allLekkas,
         selectedCycle
-    ) { id, lekkas, cycle ->
-        Triple(id, lekkas, cycle)
-    }.flatMapLatest { (id, lekkas, cycle) ->
+    ) { id, lekkas, cycleOption ->
+        Triple(id, lekkas, cycleOption)
+    }.flatMapLatest { (id, lekkas, cycleOption) ->
         if (id == null) {
             flowOf(emptyList())
         } else {
             val selected = lekkas.find { it.id == id }
-            if (selected?.isMotherTable == true) {
+            val rawExpensesFlow = if (selected?.isMotherTable == true) {
                 repository.getAllExpensesWithCategoryAndLekkaFlow()
             } else {
-                repository.getExpensesWithCategoryAndLekka(id).map { list ->
-                    list.filter { item ->
-                        val date = item.expense.date
-                        !date.isBefore(cycle.startDate) && !date.isAfter(cycle.endDate)
-                    }
+                repository.getExpensesWithCategoryAndLekka(id)
+            }
+            rawExpensesFlow.map { list ->
+                list.filter { item ->
+                    cycleOption.matchesDate(item.expense.date)
                 }
             }
         }
@@ -314,18 +327,26 @@ class ExpenseViewModel(
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val monthlySummaries: StateFlow<List<MonthlySummary>> = combine(_selectedLekkaId, allLekkas) { id, lekkas ->
-        Pair(id, lekkas)
-    }.flatMapLatest { (id, lekkas) ->
+    val monthlySummaries: StateFlow<List<MonthlySummary>> = combine(
+        expenses,
+        _selectedLekkaId,
+        allLekkas
+    ) { activeExpenses, id, _ ->
         if (id == null) {
-            flowOf(emptyList())
+            emptyList()
         } else {
-            val selected = lekkas.find { it.id == id }
-            if (selected?.isMotherTable == true) {
-                repository.getAllMonthlySummaries()
-            } else {
-                repository.getMonthlySummariesByLekka(id)
-            }
+            activeExpenses
+                .groupBy { it.expense.date.format(DateTimeFormatter.ofPattern("yyyy-MM")) }
+                .map { (month, monthExpenses) ->
+                    val totalIncome = monthExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
+                    val totalExpense = monthExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
+                    MonthlySummary(
+                        month = month,
+                        totalIncome = totalIncome,
+                        totalExpense = totalExpense
+                    )
+                }
+                .sortedByDescending { it.month }
         }
     }.stateIn(
         scope = viewModelScope,

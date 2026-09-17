@@ -1,6 +1,5 @@
 package com.vinay.monthlylekka.ui
 
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -36,9 +35,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.rounded.AddCircleOutline
+import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.PriceChange
 import androidx.compose.material.icons.rounded.RemoveCircleOutline
+import com.vinay.monthlylekka.data.CycleOption
 import com.vinay.monthlylekka.data.Lekka
 import com.vinay.monthlylekka.data.LekkaSummary
 import com.vinay.monthlylekka.data.LekkaWithSummary
@@ -59,7 +61,9 @@ fun WelcomeScreen(
     onManageAllTablesClick: () -> Unit,
     modifier: Modifier = Modifier,
     motherTableSummary: LekkaSummary? = null,
-    selectedCycle: MonthlyCycle? = null,
+    selectedCycle: CycleOption? = null,
+    cycleOptions: List<CycleOption> = emptyList(),
+    onSelectCycle: (CycleOption) -> Unit = {},
     monthStartDay: Int = 1,
     onUpdateMonthStartDay: (Int) -> Unit = {},
     currencySymbol: String = "₹",
@@ -125,37 +129,92 @@ fun WelcomeScreen(
                 onTutorialClick = onTutorialClick
             )
 
-            // Current Cycle & Currency Badges
-            val monthDayFormatter = remember { DateTimeFormatter.ofPattern("MMM d", Locale.US) }
-            val cycleShortLabel = selectedCycle?.let {
-                "${it.startDate.format(monthDayFormatter)} - ${it.endDate.format(monthDayFormatter)}"
-            } ?: "Sep 1 - Sep 30"
+            // Month & Year Cycle Dropdown Selector & Currency Badges
+            var cycleDropdownExpanded by remember { mutableStateOf(false) }
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    onClick = { showStartDayDialog = true },
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                Box {
+                    Surface(
+                        onClick = { cycleDropdownExpanded = true },
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                        shadowElevation = 2.dp
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = selectedCycle?.dropdownLabel ?: "📅 Select Cycle",
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Rounded.ArrowDropDown,
+                                contentDescription = "Select Cycle",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = cycleDropdownExpanded,
+                        onDismissRequest = { cycleDropdownExpanded = false },
+                        modifier = Modifier.widthIn(min = 260.dp)
                     ) {
                         Text(
-                            text = "📅 $cycleShortLabel",
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            text = "Select Monthly Cycle",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(
-                            imageVector = Icons.Rounded.Edit,
-                            contentDescription = "Edit Month Start Day",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
+                        HorizontalDivider()
+                        cycleOptions.forEach { option ->
+                            val isSelected = (option == selectedCycle)
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = option.dropdownLabel,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                trailingIcon = {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = "Selected",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    cycleDropdownExpanded = false
+                                    onSelectCycle(option)
+                                }
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "⚙️ Cycle Start Day: ${monthStartDay}th of month",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                            },
+                            onClick = {
+                                cycleDropdownExpanded = false
+                                showStartDayDialog = true
+                            }
                         )
                     }
                 }

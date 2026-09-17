@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
                 val motherTableSummary by viewModel.motherTableSummary.collectAsState()
                 val mostRecentTable by viewModel.mostRecentTable.collectAsState()
                 val selectedCycle by viewModel.selectedCycle.collectAsState()
+                val cycleOptions by viewModel.cycleOptions.collectAsState()
                 val monthStartDay by viewModel.monthStartDay.collectAsState()
                 val pastCycles by viewModel.pastCycles.collectAsState()
                 val currencySymbol by viewModel.currencySymbol.collectAsState()
@@ -171,6 +172,7 @@ class MainActivity : ComponentActivity() {
                                         monthlySummaries = monthlySummaries,
                                         categories = categories,
                                         selectedCycle = selectedCycle,
+                                        cycleOptions = cycleOptions,
                                         pastCycles = pastCycles,
                                         onSelectCycle = viewModel::selectCycle,
                                         onBack = {
@@ -294,6 +296,8 @@ class MainActivity : ComponentActivity() {
                                         mostRecentTable = mostRecentTable,
                                         motherTableSummary = motherTableSummary,
                                         selectedCycle = selectedCycle,
+                                        cycleOptions = cycleOptions,
+                                        onSelectCycle = viewModel::selectCycle,
                                         monthStartDay = monthStartDay,
                                         onUpdateMonthStartDay = viewModel::updateMonthStartDay,
                                         currencySymbol = currencySymbol,
@@ -361,6 +365,7 @@ class MainActivity : ComponentActivity() {
                                         monthlySummaries = monthlySummaries,
                                         categories = categories,
                                         selectedCycle = selectedCycle,
+                                        cycleOptions = cycleOptions,
                                         pastCycles = pastCycles,
                                         onSelectCycle = viewModel::selectCycle,
                                         onBack = {
@@ -392,6 +397,7 @@ class MainActivity : ComponentActivity() {
                                         monthlySummaries = monthlySummaries,
                                         categories = categories,
                                         selectedCycle = selectedCycle,
+                                        cycleOptions = cycleOptions,
                                         pastCycles = pastCycles,
                                         onSelectCycle = viewModel::selectCycle,
                                         onBack = {
