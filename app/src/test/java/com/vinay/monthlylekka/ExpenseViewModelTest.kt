@@ -972,5 +972,81 @@ class ExpenseViewModelTest {
         viewModel.selectCycle(CycleOption.AllTime)
         advanceUntilIdle()
         assertEquals(300.0, viewModel.motherTableSummary.value?.totalExpense ?: 0.0, 0.01)
+
+        // Select a future cycle with no transactions, master table summary should strictly reset to 0
+        val futureCycle = getMonthlyCycleForDate(LocalDate.now().plusMonths(6), 1)
+        viewModel.selectCycle(futureCycle)
+        advanceUntilIdle()
+        assertEquals(0.0, viewModel.motherTableSummary.value?.totalIncome ?: -1.0, 0.01)
+        assertEquals(0.0, viewModel.motherTableSummary.value?.totalExpense ?: -1.0, 0.01)
+        assertEquals(0.0, viewModel.motherTableSummary.value?.balance ?: -1.0, 0.01)
+        assertEquals(0, viewModel.motherTableSummary.value?.transactionCount ?: -1)
+    }
+
+    @Test
+    fun emptyOrFreshCycle_resetsMasterAndChildSummariesStrictlyToZero() = runTest {
+        val fakeCategoryDao = FakeCategoryDao()
+        val fakeExpenseDao = FakeExpenseDao()
+        val fakeLekkaDao = FakeLekkaDao()
+        val repository = AppRepository(fakeCategoryDao, fakeExpenseDao, fakeLekkaDao, ioDispatcher = testDispatcher)
+        val viewModel = ExpenseViewModel(repository, ioDispatcher = testDispatcher)
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.motherTableSummary.collect {}
+        }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.allLekkasWithSummary.collect {}
+        }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.expenses.collect {}
+        }
+        advanceUntilIdle()
+
+        val childLekka = fakeLekkaDao.getAllLekkas().first().find { !it.isMotherTable }!!
+        val catIncome = Category(id = 1, lekkaId = childLekka.id, name = "Salary", colorHex = "#10B981", isIncome = true)
+        val catExpense = Category(id = 2, lekkaId = childLekka.id, name = "Food", colorHex = "#FF0000", isIncome = false)
+
+        val currentMonthIncome = Expense(id = 1, lekkaId = childLekka.id, description = "Salary", amount = 5000.0, categoryId = 1, date = LocalDate.now())
+        val currentMonthExpense = Expense(id = 2, lekkaId = childLekka.id, description = "Groceries", amount = 1200.0, categoryId = 2, date = LocalDate.now())
+
+        fakeExpenseDao.expenses.value = listOf(
+            ExpenseWithCategoryAndLekka(currentMonthIncome, catIncome, childLekka.name),
+            ExpenseWithCategoryAndLekka(currentMonthExpense, catExpense, childLekka.name)
+        )
+        advanceUntilIdle()
+
+        // 1. Verify current cycle totals
+        assertEquals(5000.0, viewModel.motherTableSummary.value?.totalIncome ?: -1.0, 0.01)
+        assertEquals(1200.0, viewModel.motherTableSummary.value?.totalExpense ?: -1.0, 0.01)
+        assertEquals(3800.0, viewModel.motherTableSummary.value?.balance ?: -1.0, 0.01)
+        assertEquals(2, viewModel.motherTableSummary.value?.transactionCount ?: -1)
+
+        // 2. Switch to a fresh/empty cycle (e.g. 5 months in the future)
+        val freshCycle = getMonthlyCycleForDate(LocalDate.now().plusMonths(5), 1)
+        viewModel.selectCycle(freshCycle)
+        advanceUntilIdle()
+
+        // Verify Master Table summary strictly resets to 0
+        val freshMasterSummary = viewModel.motherTableSummary.value
+        assertNotNull(freshMasterSummary)
+        assertEquals(0.0, freshMasterSummary?.totalIncome ?: -1.0, 0.01)
+        assertEquals(0.0, freshMasterSummary?.totalExpense ?: -1.0, 0.01)
+        assertEquals(0.0, freshMasterSummary?.balance ?: -1.0, 0.01)
+        assertEquals(0, freshMasterSummary?.transactionCount ?: -1)
+
+        // Verify all child table summaries strictly reset to 0
+        val freshLekkasWithSummary = viewModel.allLekkasWithSummary.value
+        assertTrue(freshLekkasWithSummary.isNotEmpty())
+        freshLekkasWithSummary.forEach { lekkaWithSummary ->
+            val summary = lekkaWithSummary.summary
+            assertNotNull(summary)
+            assertEquals(0.0, summary?.totalIncome ?: -1.0, 0.01)
+            assertEquals(0.0, summary?.totalExpense ?: -1.0, 0.01)
+            assertEquals(0.0, summary?.balance ?: -1.0, 0.01)
+            assertEquals(0, summary?.transactionCount ?: -1)
+        }
+
+        // Verify active expenses list is empty
+        assertEquals(0, viewModel.expenses.value.size)
     }
 }

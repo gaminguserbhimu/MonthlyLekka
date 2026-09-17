@@ -84,7 +84,8 @@ interface ExpenseDao {
         SELECT 
             :lekkaId as lekkaId,
             COALESCE(SUM(CASE WHEN c.isIncome = 1 THEN e.amount ELSE 0 END), 0.0) as totalIncome,
-            COALESCE(SUM(CASE WHEN c.isIncome = 0 THEN e.amount ELSE 0 END), 0.0) as totalExpense
+            COALESCE(SUM(CASE WHEN c.isIncome = 0 THEN e.amount ELSE 0 END), 0.0) as totalExpense,
+            COUNT(e.id) as transactionCount
         FROM expenses e
         JOIN categories c ON e.categoryId = c.id
         WHERE e.lekkaId = :lekkaId
@@ -95,7 +96,8 @@ interface ExpenseDao {
         SELECT 
             0 as lekkaId,
             COALESCE(SUM(CASE WHEN c.isIncome = 1 THEN e.amount ELSE 0 END), 0.0) as totalIncome,
-            COALESCE(SUM(CASE WHEN c.isIncome = 0 THEN e.amount ELSE 0 END), 0.0) as totalExpense
+            COALESCE(SUM(CASE WHEN c.isIncome = 0 THEN e.amount ELSE 0 END), 0.0) as totalExpense,
+            COUNT(e.id) as transactionCount
         FROM expenses e
         JOIN categories c ON e.categoryId = c.id
         JOIN lekkas l ON e.lekkaId = l.id

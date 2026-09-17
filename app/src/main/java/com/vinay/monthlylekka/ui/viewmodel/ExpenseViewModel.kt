@@ -163,12 +163,13 @@ class ExpenseViewModel(
         LekkaSummary(
             lekkaId = motherLekkaId,
             totalIncome = totalIncome,
-            totalExpense = totalExpense
+            totalExpense = totalExpense,
+            transactionCount = filtered.size
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = LekkaSummary(0L, 0.0, 0.0)
+        initialValue = LekkaSummary(0L, 0.0, 0.0, 0)
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -208,7 +209,15 @@ class ExpenseViewModel(
                 val tableExpenses = if (lekka.isMotherTable) cycleExpenses else cycleExpenses.filter { it.expense.lekkaId == lekka.id }
                 val totalIncome = tableExpenses.filter { it.category.isIncome }.sumOf { it.expense.amount }
                 val totalExpense = tableExpenses.filter { !it.category.isIncome }.sumOf { it.expense.amount }
-                LekkaWithSummary(lekka, LekkaSummary(lekka.id, totalIncome, totalExpense))
+                LekkaWithSummary(
+                    lekka = lekka,
+                    summary = LekkaSummary(
+                        lekkaId = lekka.id,
+                        totalIncome = totalIncome,
+                        totalExpense = totalExpense,
+                        transactionCount = tableExpenses.size
+                    )
+                )
             }
         }
     }.stateIn(
