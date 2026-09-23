@@ -29,3 +29,4 @@ Thumbs.db
 # Project artifacts and agent files
 .artifacts/
 .agent/
+.kotlin/

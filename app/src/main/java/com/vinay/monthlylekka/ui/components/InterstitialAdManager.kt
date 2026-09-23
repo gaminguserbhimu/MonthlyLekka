@@ -3,41 +3,83 @@ package com.vinay.monthlylekka.ui.components
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.util.Log
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
 /**
- * Singleton manager to handle loading and displaying Interstitial Ads.
- * Configured cleanly for Amazon Appstore release distribution.
+ * Singleton manager to handle loading and displaying Google Mobile Ads Interstitial Ads.
  */
 object InterstitialAdManager {
 
+    private const val TAG = "InterstitialAdManager"
+    const val AD_UNIT_ID = "ca-app-pub-4120760179761356/1771535176"
+
+    private var mInterstitialAd: InterstitialAd? = null
+    private var isLoading = false
+
     /**
-     * Preload an interstitial ad for Amazon Appstore release distribution.
+     * Preload an interstitial ad using Google Mobile Ads SDK.
      */
-    fun loadAd(@Suppress("UNUSED_PARAMETER") context: Context) {
-        // Configured cleanly for Amazon Appstore release distribution
+    fun loadAd(context: Context, adUnitId: String = AD_UNIT_ID) {
+        if ((mInterstitialAd != null) || isLoading) return
+
+        isLoading = true
+        val adRequest = AdRequest.Builder().build()
+
+        InterstitialAd.load(
+            context.applicationContext,
+            adUnitId,
+            adRequest,
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                    mInterstitialAd = interstitialAd
+                    isLoading = false
+                    Log.d(TAG, "Interstitial ad loaded successfully.")
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    mInterstitialAd = null
+                    isLoading = false
+                    Log.e(TAG, "Failed to load interstitial ad: ${loadAdError.message}")
+                }
+            },
+        )
     }
 
     /**
-     * Preload an interstitial ad (alias) for Amazon Appstore release distribution.
+     * Preload an interstitial ad (alias).
      */
-    @Suppress("unused", "UNUSED_PARAMETER")
+    @Suppress("unused")
     fun preloadInterstitialAd(context: Context) {
-        // Configured cleanly for Amazon Appstore release distribution
+        loadAd(context)
     }
 
     /**
-     * Show the preloaded interstitial ad using the provided Activity for Amazon Appstore release distribution.
+     * Show the preloaded interstitial ad using the provided Activity.
      */
-    fun showAd(@Suppress("UNUSED_PARAMETER") activity: Activity?) {
-        // Configured cleanly for Amazon Appstore release distribution
+    fun showAd(activity: Activity?) {
+        if (activity == null) return
+
+        val ad = mInterstitialAd
+        if (ad != null) {
+            mInterstitialAd = null
+            ad.show(activity)
+            loadAd(activity)
+        } else {
+            Log.d(TAG, "Interstitial ad not ready yet.")
+            loadAd(activity)
+        }
     }
 
     /**
-     * Show the preloaded interstitial ad using the provided Activity (alias) for Amazon Appstore release distribution.
+     * Show the preloaded interstitial ad using the provided Activity (alias).
      */
-    @Suppress("unused", "UNUSED_PARAMETER")
+    @Suppress("unused")
     fun showInterstitialAd(activity: Activity?) {
-        // Configured cleanly for Amazon Appstore release distribution
+        showAd(activity)
     }
 }
 
@@ -46,9 +88,8 @@ object InterstitialAdManager {
  */
 fun Context.findActivity(): Activity? {
     var context = this
-    while (context is ContextWrapper) {
-        if (context is Activity) return context
+    while ((context !is Activity) && (context is ContextWrapper)) {
         context = context.baseContext
     }
-    return null
+    return context as? Activity
 }
