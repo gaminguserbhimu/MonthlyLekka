@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Monthly Expenses - Personal & Event Expense Tracker developed by VinApps. Free, 100% offline, privacy-first Android expense management app.">
+    <meta name="keywords" content="Monthly Expenses, Monthly Lekka, Expense Tracker, Personal Finance, Event Budget, Android App, VinApps, Offline Budget App">
+    <meta name="author" content="VinApps">
+    <meta property="og:title" content="Monthly Expenses - Personal & Event Expense Tracker">
+    <meta property="og:description" content="Organize personal budgets and event expenses into custom Lekka tables with payday cycles, interactive charts, and 100% offline privacy. Developed by VinApps.">
+    <meta property="og:image" content="images/feature_graphic_1024_500.png">
+    <meta property="og:type" content="website">
+    <title>Monthly Expenses - Personal & Event Expense Tracker | VinApps</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-dark: #070814;
+            --bg-card: rgba(18, 22, 48, 0.65);
+            --bg-card-hover: rgba(28, 34, 72, 0.85);
+            --border-glow: rgba(99, 102, 241, 0.25);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+
+            --cyan-accent: #00f2fe;
+            --blue-accent: #4facfe;
+            --purple-accent: #8b5cf6;
+            --pink-accent: #ec4899;
+            --emerald-accent: #10b981;
+
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+
+            --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-heading: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        /* Ambient Glowing Orbs Background */
+        .ambient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.45;
+            animation: pulse-glow 8s ease-in-out infinite alternate;
+        }
+
+        .orb-1 {
+            top: -100px;
+            left: -100px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, #6366f1 0%, rgba(99, 102, 241, 0) 70%);
+        }
+
+        .orb-2 {
+            top: 25%;
+            right: -150px;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, #00f2fe 0%, rgba(0, 242, 254, 0) 70%);
+            animation-delay: 2s;
+        }
+
+        .orb-3 {
+            bottom: 20%;
+            left: -100px;
+            width: 550px;
+            height: 550px;
+            background: radial-gradient(circle, #8b5cf6 0%, rgba(139, 92, 246, 0) 70%);
+            animation-delay: 4s;
+        }
+
+        @keyframes pulse-glow {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.35; }
+            50% { transform: scale(1.1) translate(20px, -20px); opacity: 0.5; }
+            100% { transform: scale(0.95) translate(-10px, 15px); opacity: 0.35; }
+        }
+
+        /* Container & Grid layout */
+        .container {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Navigation Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: rgba(7, 8, 20, 0.75);
+            border-bottom: 1px solid var(--border-subtle);
+            transition: all 0.3s ease;
+        }
+
+        .nav-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 80px;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+        }
+
+        .brand-logo img {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+            transition: transform 0.3s ease;
+        }
+
+        .brand-logo:hover img {
+            transform: scale(1.08) rotate(3deg);
+        }
+
+        .brand-text-title {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vinapps-tag {
+            font-size: 0.72rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--cyan-accent), var(--blue-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 2px 8px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            background-color: rgba(0, 242, 254, 0.05);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--cyan-accent);
+        }
+
+        .nav-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-decoration: none;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            padding-top: 160px;
+            padding-bottom: 90px;
+            text-align: center;
+            position: relative;
+        }
+
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            border-radius: 30px;
+            background: rgba(30, 41, 89, 0.6);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: var(--cyan-accent);
+            font-size: 0.88rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .version-badge i {
+            font-size: 0.8rem;
+            color: var(--emerald-accent);
+        }
+
+        .hero-title {
+            font-family: var(--font-heading);
+            font-size: 3.8rem;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.03em;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-title span {
+            background: linear-gradient(135deg, var(--cyan-accent) 0%, var(--purple-accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .developer-credit {
+            font-size: 1.05rem;
+            font-style: italic;
+            color: var(--cyan-accent);
+            margin-bottom: 24px;
+            font-weight: 500;
+        }
+
+        .hero-description {
+            max-width: 720px;
+            margin: 0 auto 40px auto;
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* Direct Prominent Download Button */
+        .download-btn-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 50px;
+        }
+
+        .btn-download-main {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            padding: 18px 38px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 800;
+            text-decoration: none;
+            border-radius: 50px;
+            box-shadow: 0 10px 35px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            transition: all 0.35 ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-download-main::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 60%);
+            transform: scale(0);
+            transition: transform 0.5s ease;
+        }
+
+        .btn-download-main:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 45px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+        }
+
+        .btn-download-main:hover::before {
+            transform: scale(1);
+        }
+
+        .btn-download-main i {
+            font-size: 1.5rem;
+            animation: bounce-icon 2s infinite;
+        }
+
+        @keyframes bounce-icon {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(4px); }
+        }
+
+        .download-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .download-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .download-secondary-links {
+            display: flex;
+            gap: 16px;
+            margin-top: 6px;
+        }
+
+        .link-secondary {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            transition: all 0.2s ease;
+        }
+
+        .link-secondary:hover {
+            color: var(--text-primary);
+            border-color: var(--border-glow);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Hero Showcase Image Frame */
+        .hero-banner-wrapper {
+            margin-top: 30px;
+            position: relative;
+            max-width: 980px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .glass-frame {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 12px;
+            border: 1px solid var(--border-glow);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99, 102, 241, 0.25);
+            backdrop-filter: blur(16px);
+            overflow: hidden;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        .glass-frame:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 242, 254, 0.35);
+        }
+
+        .glass-frame img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 16px;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 80px 0;
+            padding: 30px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(12px);
+            text-align: center;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-number {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--cyan-accent), var(--blue-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* Section Header */
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-tag {
+            display: inline-block;
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--cyan-accent);
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: 2.6rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+            margin-bottom: 120px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 32px 28px;
+            backdrop-filter: blur(12px);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyan-accent), var(--purple-accent));
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            background: var(--bg-card-hover);
+            border-color: var(--border-glow);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon-wrapper {
+            width: 58px;
+            height: 58px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 22px;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            color: var(--cyan-accent);
+        }
+
+        .feature-title {
+            font-family: var(--font-heading);
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .feature-desc {
+            font-size: 0.98rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Screenshot Showcase Gallery */
+        .showcase-section {
+            padding: 80px 0 120px 0;
+        }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+
+        .screenshot-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid var(--border-subtle);
+            padding: 16px;
+            backdrop-filter: blur(12px);
+            transition: all 0.35s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .screenshot-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: var(--border-glow);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(0, 242, 254, 0.25);
+        }
+
+        .screenshot-img-wrapper {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .screenshot-img-wrapper img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+
+        .screenshot-card:hover .screenshot-img-wrapper img {
+            transform: scale(1.04);
+        }
+
+        .screenshot-caption-title {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            text-align: center;
+        }
+
+        .screenshot-caption-sub {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* Download Banner Section */
+        .cta-section {
+            margin-bottom: 100px;
+        }
+
+        .cta-card {
+            background: linear-gradient(135deg, rgba(30, 35, 74, 0.9) 0%, rgba(15, 18, 40, 0.95) 100%);
+            border-radius: 28px;
+            border: 1px solid var(--border-glow);
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(99, 102, 241, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, rgba(0, 242, 254, 0.2) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .cta-title {
+            font-family: var(--font-heading);
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .cta-desc {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 36px auto;
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(5, 6, 14, 0.95);
+            border-top: 1px solid var(--border-subtle);
+            padding: 60px 0 30px 0;
+            color: var(--text-muted);
+            font-size: 0.92rem;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-brand-title {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .footer-brand-desc {
+            color: var(--text-secondary);
+            max-width: 360px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .footer-column-title {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            letter-spacing: 0.02em;
+        }
+
+        .footer-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-links a:hover {
+            color: var(--cyan-accent);
+        }
+
+        .footer-bottom {
+            padding-top: 24px;
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .developer-badge {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .developer-badge span {
+            color: var(--cyan-accent);
+            font-weight: 700;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1024px) {
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .showcase-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .hero-title {
+                font-size: 3rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            .hero-title {
+                font-size: 2.3rem;
+            }
+            .hero-subtitle {
+                font-size: 1.15rem;
+            }
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            .showcase-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+            }
+            .btn-download-main {
+                width: 100%;
+                font-size: 1.1rem;
+                padding: 16px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient Glowing Orbs -->
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+    <div class="ambient-orb orb-3"></div>
+
+    <!-- Navigation Header -->
+    <header>
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="#" class="brand-logo">
+                    <img src="images/app_icon_512.png" alt="Monthly Expenses Logo">
+                    <div class="brand-text-title">
+                        Monthly Expenses
+                        <span class="vinapps-tag">VinApps</span>
+                    </div>
+                </a>
+
+                <ul class="nav-links">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#screenshots">Screenshots</a></li>
+                    <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                    <li><a href="https://github.com/gaminguserbhimu/MonthlyLekka" target="_blank"><i class="fa-brands fa-github"></i> GitHub</a></li>
+                </ul>
+
+                <a href="https://github.com/gaminguserbhimu/MonthlyLekka/releases/download/v1.0.10/app-release.apk" class="nav-cta">
+                    <i class="fa-solid fa-download"></i> Get App
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="version-badge">
+                <i class="fa-solid fa-sparkles"></i>
+                <span>v1.0.10 Released</span> • 100% Free &amp; Offline
+            </div>
+
+            <h1 class="hero-title">Monthly <span>Expenses</span></h1>
+            <div class="hero-subtitle">Personal &amp; Event Expense Tracker</div>
+            <div class="developer-credit">Developed by VinApps</div>
+
+            <p class="hero-description">
+                Master your personal monthly budgets and event-based expenses with custom Lekka tables, flexible payday cycles, interactive 5-slide analytics, and total local offline privacy.
+            </p>
+
+            <!-- Direct Prominent Download Button -->
+            <div class="download-btn-container">
+                <a href="https://github.com/gaminguserbhimu/MonthlyLekka/releases/download/v1.0.10/app-release.apk" class="btn-download-main">
+                    <i class="fa-solid fa-download"></i>
+                    <span>📥 Download Free Android App (.APK v1.0.10)</span>
+                </a>
+
+                <div class="download-meta">
+                    <span><i class="fa-brands fa-android" style="color:#3ddc84;"></i> Android 8.0+</span>
+                    <span>•</span>
+                    <span><i class="fa-solid fa-shield-halved" style="color:#10b981;"></i> 100% Offline &amp; Private</span>
+                    <span>•</span>
+                    <span><i class="fa-solid fa-bolt" style="color:#f59e0b;"></i> ~15 MB</span>
+                </div>
+
+                <div class="download-secondary-links">
+                    <a href="https://github.com/gaminguserbhimu/MonthlyLekka" target="_blank" class="link-secondary">
+                        <i class="fa-brands fa-github"></i> View Source Code on GitHub
+                    </a>
+                    <a href="privacy-policy.html" class="link-secondary">
+                        <i class="fa-solid fa-user-shield"></i> Privacy Policy
+                    </a>
+                </div>
+            </div>
+
+            <!-- Hero Feature Graphic Showcase Frame -->
+            <div class="hero-banner-wrapper">
+                <div class="glass-frame">
+                    <img src="images/feature_graphic_1024_500.png" alt="Monthly Expenses Feature Banner - VinApps">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Highlight Bar -->
+    <div class="container">
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Offline &amp; Private</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">Multi-Table</div>
+                <div class="stat-label">Master Aggregator</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">5-Slide</div>
+                <div class="stat-label">Visual Analytics</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">1-Tap</div>
+                <div class="stat-label">Quick Add Widget</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section Grid -->
+    <section id="features" class="container" style="padding-top: 40px;">
+        <div class="section-header">
+            <span class="section-tag">Core Capabilities</span>
+            <h2 class="section-title">Designed for Modern Financial Clarity</h2>
+            <p class="section-subtitle">Everything you need to track, organize, and analyze your finances without compromising your privacy.</p>
+        </div>
+
+        <div class="features-grid">
+            <!-- 1. Multi-Table Master Aggregator -->
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <h3 class="feature-title">Multi-Table Master Aggregator</h3>
+                <p class="feature-desc">
+                    Organize expenses into separate budget tables ("Lekkas") for personal monthly budgets, group trips, weddings, or business projects with live master summary aggregation.
+                </p>
+            </div>
+
+            <!-- 2. Custom Payday Cycles -->
+            <div class="feature-card">
+                <div class="feature-icon-wrapper" style="color: var(--purple-accent); background: rgba(139, 92, 246, 0.12); border-color: rgba(139, 92, 246, 0.25);">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+                <h3 class="feature-title">Custom Payday Cycles</h3>
+                <p class="feature-desc">
+                    Tailor monthly tracking to your actual salary payday—whether it's the 1st, 15th, or 25th of the month. Never be constrained by rigid calendar month boundaries again.
+                </p>
+            </div>
+
+            <!-- 3. 5-Slide Analytics & Pie Charts -->
+            <div class="feature-card">
+                <div class="feature-icon-wrapper" style="color: var(--pink-accent); background: rgba(236, 72, 153, 0.12); border-color: rgba(236, 72, 153, 0.25);">
+                    <i class="fa-solid fa-chart-pie"></i>
+                </div>
+                <h3 class="feature-title">5-Slide Analytics &amp; Pie Charts</h3>
+                <p class="feature-desc">
+                    Deep visual insights with 5 interactive analysis slides, category breakdown pie charts, monthly spending trends, cash flow distribution, and budget health metrics.
+                </p>
+            </div>
+
+            <!-- 4. 1-Tap Quick Add Widget -->
+            <div class="feature-card">
+                <div class="feature-icon-wrapper" style="color: #f59e0b; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.25);">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <h3 class="feature-title">1-Tap Quick Add Widget</h3>
+                <p class="feature-desc">
+                    Log transactions directly from your Android home screen with our lightning-fast 1-tap quick add widget. Log expenses faster than opening any banking app.
+                </p>
+            </div>
+
+            <!-- 5. Custom Currency Selector -->
+            <div class="feature-card">
+                <div class="feature-icon-wrapper" style="color: var(--emerald-accent); background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.25);">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+                <h3 class="feature-title">Custom Currency Selector</h3>
+                <p class="feature-desc">
+                    Choose your preferred currency symbol ($, ₹, €, £, ¥, AED, or custom) with precise locale formatting, customizable category icons, and custom color themes.
+                </p>
+            </div>
+
+            <!-- 6. 100% Offline Privacy -->
+            <div class="feature-card">
+                <div class="feature-icon-wrapper" style="color: #38bdf8; background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.25);">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h3 class="feature-title">100% Offline Privacy</h3>
+                <p class="feature-desc">
+                    Your financial records, receipt photos, and notes are saved locally in an encrypted Room database. Zero telemetry, zero external servers, complete data ownership.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshot Showcase Gallery Section -->
+    <section id="screenshots" class="showcase-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">User Experience</span>
+                <h2 class="section-title">Cosmic Fintech Interface</h2>
+                <p class="section-subtitle">Crafted with Jetpack Compose &amp; Material Design 3 for smooth, modern Android performance.</p>
+            </div>
+
+            <div class="showcase-grid">
+                <!-- Screenshot 1 -->
+                <div class="screenshot-card">
+                    <div class="screenshot-img-wrapper">
+                        <img src="images/screenshot_1_welcome.png" alt="Welcome & Onboarding Screen">
+                    </div>
+                    <div class="screenshot-caption-title">Welcome &amp; Setup</div>
+                    <div class="screenshot-caption-sub">Fast onboarding &amp; currency preferences</div>
+                </div>
+
+                <!-- Screenshot 2 -->
+                <div class="screenshot-card">
+                    <div class="screenshot-img-wrapper">
+                        <img src="images/screenshot_2_transactions.png" alt="Transactions & Master Table View">
+                    </div>
+                    <div class="screenshot-caption-title">Lekka Master Table</div>
+                    <div class="screenshot-caption-sub">Detailed logs, balances &amp; receipt attachments</div>
+                </div>
+
+                <!-- Screenshot 3 -->
+                <div class="screenshot-card">
+                    <div class="screenshot-img-wrapper">
+                        <img src="images/screenshot_3_piechart.png" alt="5-Slide Analytics & Pie Charts">
+                    </div>
+                    <div class="screenshot-caption-title">5-Slide Analytics</div>
+                    <div class="screenshot-caption-sub">Visual pie charts &amp; monthly breakdown</div>
+                </div>
+
+                <!-- Screenshot 4 -->
+                <div class="screenshot-card">
+                    <div class="screenshot-img-wrapper">
+                        <img src="images/screenshot_4_filter.png" alt="Advanced Search & Filtering">
+                    </div>
+                    <div class="screenshot-caption-title">Smart Filtering</div>
+                    <div class="screenshot-caption-sub">Query by date, category or keyword</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom Download CTA Section -->
+    <section class="cta-section container">
+        <div class="cta-card">
+            <h2 class="cta-title">Take Control of Your Monthly Expenses</h2>
+            <p class="cta-desc">
+                Download the free Android app today. No ads, no account registration, and 100% offline security.
+            </p>
+
+            <a href="https://github.com/gaminguserbhimu/MonthlyLekka/releases/download/v1.0.10/app-release.apk" class="btn-download-main">
+                <i class="fa-solid fa-download"></i>
+                <span>📥 Download Free Android App (.APK v1.0.10)</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <div class="footer-brand-title">
+                        <img src="images/app_icon_114.png" alt="VinApps Icon" style="width:28px; height:28px; border-radius:6px;">
+                        Monthly Expenses
+                    </div>
+                    <p class="footer-brand-desc">
+                        A modern, privacy-focused Android application designed to track personal and event-based expenses, manage custom payday cycles, and analyze spending.
+                    </p>
+                    <div class="developer-badge">
+                        Developed by <span>VinApps</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="footer-column-title">Quick Links</div>
+                    <ul class="footer-links">
+                        <li><a href="#features"><i class="fa-solid fa-chevron-right" style="font-size:0.7rem;"></i> Features</a></li>
+                        <li><a href="#screenshots"><i class="fa-solid fa-chevron-right" style="font-size:0.7rem;"></i> Screenshots</a></li>
+                        <li><a href="https://github.com/gaminguserbhimu/MonthlyLekka/releases/tag/v1.0.10" target="_blank"><i class="fa-solid fa-tag" style="font-size:0.7rem;"></i> v1.0.10 Release Notes</a></li>
+                        <li><a href="https://github.com/gaminguserbhimu/MonthlyLekka/releases/download/v1.0.10/app-release.apk"><i class="fa-solid fa-download" style="font-size:0.7rem;"></i> Download .APK</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div class="footer-column-title">Legal &amp; Developer</div>
+                    <ul class="footer-links">
+                        <li><a href="privacy-policy.html"><i class="fa-solid fa-shield-halved" style="font-size:0.7rem;"></i> Privacy Policy</a></li>
+                        <li><a href="https://github.com/gaminguserbhimu/MonthlyLekka" target="_blank"><i class="fa-brands fa-github" style="font-size:0.7rem;"></i> GitHub Repository</a></li>
+                        <li><a href="mailto:vinaykrishnadkbusiness@gmail.com"><i class="fa-solid fa-envelope" style="font-size:0.7rem;"></i> Contact Developer</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div>
+                    &copy; 2026 Monthly Expenses by VinApps. Open Source &amp; Privacy First.
+                </div>
+                <div>
+                    Official Repository: <a href="https://github.com/gaminguserbhimu/MonthlyLekka" target="_blank" style="color:var(--cyan-accent); text-decoration:none;">gaminguserbhimu/MonthlyLekka</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
