@@ -4,7 +4,7 @@
 > **App Title:** Monthly Expenses - Personal & Event Expense Tracker  
 > **Package Name:** `com.vinay.monthlylekka`  
 > **Developer / Company:** VinApps  
-> **Developer Contact Email:** `vinaykrishnadkbusiness@gmail.com` / `vinaykri222@gmail.com`  
+> **Developer Contact Email:** `vinaykrishnadkbusiness@gmail.com` 
 > **Official Repository:** https://github.com/gaminguserbhimu/MonthlyLekka  
 >
 > **Ownership Statement:**  
