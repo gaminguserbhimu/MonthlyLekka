@@ -250,7 +250,8 @@ fun TableDetailScreen(
                         )
                     },
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(bottom = 80.dp, end = 16.dp)
                 )
             }
         }

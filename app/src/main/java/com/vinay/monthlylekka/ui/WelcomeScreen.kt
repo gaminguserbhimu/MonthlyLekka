@@ -490,6 +490,7 @@ fun WelcomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .widthIn(max = 700.dp)
+                    .padding(bottom = 16.dp)
             )
         }
     }
