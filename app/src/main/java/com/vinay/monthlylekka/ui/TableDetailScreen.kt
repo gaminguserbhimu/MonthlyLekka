@@ -603,32 +603,62 @@ fun TransactionRowFormatted(
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 2: PIE CHARTS (Overall & Down Monthly)
+// SLIDE 2: PIE CHARTS (Single Dynamic Pie Chart & Category Breakdown Details)
 // ---------------------------------------------------------------------------
+data class CategoryBreakdownData(
+    val category: Category,
+    val expenses: List<ExpenseWithCategoryAndLekka>,
+    val totalAmount: Double,
+    val transactionCount: Int,
+    val percentage: Double,
+    val color: Color
+)
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PieChartsSlide(
     expenses: List<ExpenseWithCategoryAndLekka>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    currencySymbol: String = CurrencyUtils.activeCurrencySymbol
 ) {
-    val expenseOnlyList = expenses.filter { !it.category.isIncome }
-    
-    val availableMonths = remember(expenses) {
-        expenses.map { it.expense.date.format(DateTimeFormatter.ofPattern("yyyy-MM")) }
-            .distinct()
-            .sortedDescending()
+    val expenseOnlyList = remember(expenses) { expenses.filter { !it.category.isIncome } }
+
+    val categoryBreakdown = remember(expenseOnlyList) {
+        val totalAll = expenseOnlyList.sumOf { it.expense.amount }
+        expenseOnlyList.groupBy { it.category }
+            .map { (cat, catExpenses) ->
+                val sum = catExpenses.sumOf { it.expense.amount }
+                val count = catExpenses.size
+                val color = try {
+                    Color(cat.colorHex.toColorInt())
+                } catch (_: Exception) {
+                    Color.Gray
+                }
+                val pct = if (totalAll > 0) (sum / totalAll * 100) else 0.0
+                CategoryBreakdownData(
+                    category = cat,
+                    expenses = catExpenses,
+                    totalAmount = sum,
+                    transactionCount = count,
+                    percentage = pct,
+                    color = color
+                )
+            }
+            .sortedByDescending { it.totalAmount }
     }
 
-    var selectedMonth by remember(availableMonths) {
-        mutableStateOf(availableMonths.firstOrNull() ?: YearMonth.now().format(DateTimeFormatter.ofPattern("yyyy-MM")))
+    val totalSpending = remember(categoryBreakdown) { categoryBreakdown.sumOf { it.totalAmount } }
+
+    var selectedCategoryName by remember(categoryBreakdown) {
+        mutableStateOf<String?>(categoryBreakdown.firstOrNull()?.category?.name)
     }
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
             Text(
@@ -636,57 +666,321 @@ fun PieChartsSlide(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            SinglePieChartCard(
-                title = "Overall Expense Breakdown",
-                expenses = expenseOnlyList
-            )
         }
 
         item {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            CategoryPieChartCard(
+                title = "Category Distribution",
+                categoryBreakdown = categoryBreakdown,
+                totalSpending = totalSpending,
+                selectedCategoryName = selectedCategoryName,
+                currencySymbol = currencySymbol,
+                onCategorySelected = { selectedCategoryName = it }
+            )
+        }
+
+        if (selectedCategoryName != null) {
+            val selectedData = categoryBreakdown.find { it.category.name == selectedCategoryName }
+            if (selectedData != null) {
+                item {
+                    SliceInspectionCard(
+                        data = selectedData,
+                        currencySymbol = currencySymbol
+                    )
+                }
+            }
+        }
+
+        if (categoryBreakdown.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Category Breakdown",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            items(
+                items = categoryBreakdown,
+                key = { it.category.id }
+            ) { itemData ->
+                CategoryBreakdownRow(
+                    data = itemData,
+                    isSelected = (itemData.category.name == selectedCategoryName),
+                    currencySymbol = currencySymbol,
+                    onClick = { selectedCategoryName = itemData.category.name }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun CategoryPieChartCard(
+    title: String,
+    categoryBreakdown: List<CategoryBreakdownData>,
+    totalSpending: Double,
+    selectedCategoryName: String?,
+    currencySymbol: String,
+    onCategorySelected: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = CardDefaults.outlinedCardBorder()
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (categoryBreakdown.isEmpty() || totalSpending <= 0.0) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Expense Breakdown",
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis
+                        text = "No expenses recorded for this selection.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            } else {
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val chartRadius = (min(maxWidth, maxHeight) * 0.38f)
+                    val chartDiameter = chartRadius * 2
 
-                    if (availableMonths.isNotEmpty()) {
-                        MonthSelectorDropdown(
-                            availableMonths = availableMonths,
-                            selectedMonth = selectedMonth,
-                            modifier = Modifier.wrapContentWidth(),
-                            onMonthSelected = { selectedMonth = it }
+                    Box(
+                        modifier = Modifier.size(chartDiameter),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Canvas(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .pointerInput(categoryBreakdown, totalSpending) {
+                                    detectTapGestures { tapOffset ->
+                                        val centerX = size.width / 2f
+                                        val centerY = size.height / 2f
+                                        val dx = tapOffset.x - centerX
+                                        val dy = tapOffset.y - centerY
+                                        val distance = sqrt(dx * dx + dy * dy)
+                                        val maxRadius = min(size.width, size.height) / 2f
+
+                                        if (distance <= maxRadius && totalSpending > 0) {
+                                            var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                                            if (angle < 0) angle += 360f
+                                            val touchAngle = (angle - 270f + 360f) % 360f
+
+                                            var currentSweep = 0f
+                                            for (item in categoryBreakdown) {
+                                                val sweep = ((item.totalAmount / totalSpending) * 360f).toFloat()
+                                                if (touchAngle >= currentSweep && touchAngle <= currentSweep + sweep) {
+                                                    onCategorySelected(item.category.name)
+                                                    break
+                                                }
+                                                currentSweep += sweep
+                                            }
+                                        }
+                                    }
+                                }
+                        ) {
+                            var startAngle = -90f
+                            categoryBreakdown.forEach { item ->
+                                val sweepAngle = ((item.totalAmount / totalSpending) * 360f).toFloat()
+                                val isSelected = (item.category.name == selectedCategoryName)
+                                val color = item.color
+
+                                if (isSelected) {
+                                    val midAngleRad = Math.toRadians((startAngle + sweepAngle / 2f).toDouble())
+                                    val offsetDistance = 10.dp.toPx()
+                                    val dx = (cos(midAngleRad) * offsetDistance).toFloat()
+                                    val dy = (sin(midAngleRad) * offsetDistance).toFloat()
+
+                                    translate(left = dx, top = dy) {
+                                        drawArc(
+                                            color = color,
+                                            startAngle = startAngle,
+                                            sweepAngle = sweepAngle,
+                                            useCenter = true
+                                        )
+                                    }
+                                } else {
+                                    drawArc(
+                                        color = color,
+                                        startAngle = startAngle,
+                                        sweepAngle = sweepAngle,
+                                        useCenter = true
+                                    )
+                                }
+                                startAngle += sweepAngle
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier.size(chartRadius * 1.0f),
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "Total Spending",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = CurrencyUtils.formatAmount(totalSpending, currencySymbol),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    categoryBreakdown.forEach { item ->
+                        val isSelected = (item.category.name == selectedCategoryName)
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clickable { onCategorySelected(item.category.name) }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(if (isSelected) 14.dp else 12.dp)
+                                    .background(item.color, RoundedCornerShape(3.dp))
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "${item.category.name} (${"%.1f".format(item.percentage)}%)",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Normal,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SliceInspectionCard(
+    data: CategoryBreakdownData,
+    currencySymbol: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = data.color.copy(alpha = 0.12f)),
+        border = BorderStroke(1.5.dp, data.color.copy(alpha = 0.5f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .background(data.color, CircleShape)
+                    )
+                    Column {
+                        Text(
+                            text = data.category.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Selected Category",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                val monthlyExpenses = remember(expenseOnlyList, selectedMonth) {
-                    expenseOnlyList.filter {
-                        it.expense.date.format(DateTimeFormatter.ofPattern("yyyy-MM")) == selectedMonth
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = CurrencyUtils.formatAmount(data.totalAmount, currencySymbol),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = data.color.copy(alpha = 0.25f)
+                    ) {
+                        Text(
+                            text = "${"%.1f".format(data.percentage)}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
                     }
                 }
+            }
 
-                val formattedMonthLabel = try {
-                    YearMonth.parse(selectedMonth).format(DateTimeFormatter.ofPattern("MMMM yyyy"))
-                } catch (_: Exception) {
-                    selectedMonth
-                }
+            HorizontalDivider(
+                color = data.color.copy(alpha = 0.2f),
+                thickness = 1.dp
+            )
 
-                SinglePieChartCard(
-                    title = "Expenses for $formattedMonthLabel",
-                    expenses = monthlyExpenses
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Transactions Count",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "${data.transactionCount} ${if (data.transactionCount == 1) "transaction" else "transactions"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -694,64 +988,75 @@ fun PieChartsSlide(
 }
 
 @Composable
-fun MonthSelectorDropdown(
-    availableMonths: List<String>,
-    selectedMonth: String,
-    modifier: Modifier = Modifier,
-    onMonthSelected: (String) -> Unit
+fun CategoryBreakdownRow(
+    data: CategoryBreakdownData,
+    isSelected: Boolean,
+    currencySymbol: String,
+    onClick: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
-    val formattedSelected = try {
-        YearMonth.parse(selectedMonth).format(DateTimeFormatter.ofPattern("MMM yyyy"))
-    } catch (_: Exception) {
-        selectedMonth
-    }
-
-    Box(modifier = modifier) {
-        FilterChip(
-            selected = true,
-            onClick = { expanded = true },
-            label = {
-                Text(
-                    text = formattedSelected,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis
-                )
-            },
-            trailingIcon = { Icon(Icons.Rounded.ArrowDropDown, contentDescription = null) },
-            colors = FilterChipDefaults.filterChipColors(
-                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        )
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) data.color.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface
+        ),
+        border = if (isSelected) BorderStroke(1.5.dp, data.color) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            availableMonths.forEach { month ->
-                val label = try {
-                    YearMonth.parse(month).format(DateTimeFormatter.ofPattern("MMM yyyy"))
-                } catch (_: Exception) {
-                    month
-                }
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = label,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    },
-                    onClick = {
-                        onMonthSelected(month)
-                        expanded = false
-                    }
+            Box(
+                modifier = Modifier
+                    .size(width = 12.dp, height = 28.dp)
+                    .background(data.color, RoundedCornerShape(6.dp))
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = data.category.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                Text(
+                    text = "${data.transactionCount} ${if (data.transactionCount == 1) "transaction" else "transactions"}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = CurrencyUtils.formatAmount(data.totalAmount, currencySymbol),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = data.color.copy(alpha = 0.2f)
+                ) {
+                    Text(
+                        text = "${"%.1f".format(data.percentage)}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
             }
         }
     }

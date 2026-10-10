@@ -5,6 +5,11 @@ import kotlin.math.round
 
 object CurrencyUtils {
     var activeCurrencySymbol: String = "₹"
+
+    fun formatAmount(amount: Double, symbol: String = activeCurrencySymbol): String = amount.toCurrencyString(symbol)
+    fun formatAmount(amount: Float, symbol: String = activeCurrencySymbol): String = amount.toDouble().toCurrencyString(symbol)
+    fun formatAmount(amount: Int, symbol: String = activeCurrencySymbol): String = amount.toDouble().toCurrencyString(symbol)
+    fun formatAmount(amount: Long, symbol: String = activeCurrencySymbol): String = amount.toDouble().toCurrencyString(symbol)
 }
 
 /**

@@ -27,6 +27,12 @@ class CurrencyUtilsTest {
     }
 
     @Test
+    fun formatAmount_formatsCorrectlyWithDefaultAndCustomSymbols() {
+        assertEquals("₹ 1,50,000", CurrencyUtils.formatAmount(150000.0))
+        assertEquals("$ 5,000", CurrencyUtils.formatAmount(5000.0, "$"))
+    }
+
+    @Test
     fun toCurrencyString_formatsWithCustomActiveCurrencySymbol() {
         try {
             CurrencyUtils.activeCurrencySymbol = "$"
