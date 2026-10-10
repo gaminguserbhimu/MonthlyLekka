@@ -752,6 +752,151 @@
             font-weight: 700;
         }
 
+        /* Founder's Philosophy Section */
+        .philosophy-section {
+            padding: 20px 0 80px 0;
+        }
+
+        .philosophy-card {
+            background: linear-gradient(135deg, rgba(22, 28, 62, 0.85) 0%, rgba(10, 13, 32, 0.95) 100%);
+            border-radius: 28px;
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            padding: 50px 48px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 35px rgba(99, 102, 241, 0.2);
+            backdrop-filter: blur(16px);
+        }
+
+        .philosophy-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyan-accent), var(--purple-accent), var(--emerald-accent));
+        }
+
+        .philosophy-card::after {
+            content: '';
+            position: absolute;
+            bottom: -80px;
+            right: -80px;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.18) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .philosophy-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .philosophy-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: rgba(0, 242, 254, 0.08);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            color: var(--cyan-accent);
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .philosophy-title {
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 28px;
+            line-height: 1.25;
+        }
+
+        .philosophy-title .title-sub {
+            background: linear-gradient(135deg, var(--cyan-accent), var(--blue-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .philosophy-quote-body {
+            position: relative;
+            padding-left: 28px;
+            border-left: 3px solid var(--purple-accent);
+            margin-bottom: 36px;
+        }
+
+        .quote-icon-bg {
+            position: absolute;
+            top: -20px;
+            right: 20px;
+            font-size: 5.5rem;
+            color: rgba(99, 102, 241, 0.08);
+            pointer-events: none;
+        }
+
+        .philosophy-text {
+            font-size: 1.2rem;
+            line-height: 1.85;
+            color: #cbd5e1;
+            font-weight: 400;
+        }
+
+        .highlight-mindfulness {
+            color: var(--cyan-accent);
+            font-weight: 700;
+            text-shadow: 0 0 12px rgba(0, 242, 254, 0.3);
+        }
+
+        .highlight-accountability {
+            color: var(--emerald-accent);
+            font-weight: 700;
+            text-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .highlight-freedom {
+            color: #c084fc;
+            font-weight: 700;
+            text-shadow: 0 0 12px rgba(192, 132, 252, 0.3);
+        }
+
+        .philosophy-author {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .author-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);
+        }
+
+        .author-info-name {
+            font-family: var(--font-heading);
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .author-info-title {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
         /* Responsive Breakpoints */
         @media (max-width: 1024px) {
             .features-grid {
@@ -797,6 +942,19 @@
                 font-size: 1.1rem;
                 padding: 16px 24px;
             }
+            .philosophy-card {
+                padding: 32px 20px;
+            }
+            .philosophy-title {
+                font-size: 1.6rem;
+            }
+            .philosophy-text {
+                font-size: 1.05rem;
+                line-height: 1.7;
+            }
+            .philosophy-quote-body {
+                padding-left: 18px;
+            }
         }
     </style>
 </head>
@@ -821,6 +979,7 @@
 
                 <ul class="nav-links">
                     <li><a href="#features">Features</a></li>
+                    <li><a href="#philosophy">Philosophy</a></li>
                     <li><a href="#screenshots">Screenshots</a></li>
                     <li><a href="privacy-policy.html">Privacy Policy</a></li>
                     <li><a href="https://github.com/gaminguserbhimu/MonthlyLekka" target="_blank"><i class="fa-brands fa-github"></i> GitHub</a></li>
@@ -982,6 +1141,34 @@
         </div>
     </section>
 
+    <!-- Founder's Perspective / Conscious Budgeting Philosophy Section -->
+    <section id="philosophy" class="philosophy-section container">
+        <div class="philosophy-card">
+            <div class="quote-icon-bg"><i class="fa-solid fa-quote-right"></i></div>
+            <div class="philosophy-header">
+                <div class="philosophy-badge">
+                    <i class="fa-solid fa-lightbulb"></i> Conscious Budgeting Philosophy
+                </div>
+            </div>
+
+            <h2 class="philosophy-title">Why Conscious Tracking Matters — <span class="title-sub">A Note From The Developer</span></h2>
+
+            <div class="philosophy-quote-body">
+                <p class="philosophy-text">
+                    "Most modern apps try to automatically track expenses in the background using AI, but silent tracking rarely builds financial awareness. When you intentionally log your daily expenses yourself, it creates a <span class="highlight-mindfulness">powerful moment of mindfulness</span>. Pausing for 2 seconds to record what you spent today gives you a true sense of <span class="highlight-accountability">responsibility and accountability</span> over your hard-earned money. Monthly Expenses is designed to turn budgeting into an <span class="highlight-freedom">empowering daily habit for financial freedom</span>."
+                </p>
+            </div>
+
+            <div class="philosophy-author">
+                <img src="images/app_icon_114.png" alt="VinApps Developer Logo" class="author-avatar">
+                <div class="author-info">
+                    <div class="author-info-name">VinApps</div>
+                    <div class="author-info-title">Developer &amp; Creator of Monthly Expenses</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Screenshot Showcase Gallery Section -->
     <section id="screenshots" class="showcase-section">
         <div class="container">
@@ -1067,6 +1254,7 @@
                     <div class="footer-column-title">Quick Links</div>
                     <ul class="footer-links">
                         <li><a href="#features"><i class="fa-solid fa-chevron-right" style="font-size:0.7rem;"></i> Features</a></li>
+                        <li><a href="#philosophy"><i class="fa-solid fa-chevron-right" style="font-size:0.7rem;"></i> Philosophy</a></li>
                         <li><a href="#screenshots"><i class="fa-solid fa-chevron-right" style="font-size:0.7rem;"></i> Screenshots</a></li>
                         <li><a href="https://github.com/gaminguserbhimu/MonthlyLekka/releases/tag/v1.0.10" target="_blank"><i class="fa-solid fa-tag" style="font-size:0.7rem;"></i> v1.0.10 Release Notes</a></li>
                         <li><a href="https://github.com/gaminguserbhimu/MonthlyLekka/releases/download/v1.0.10/app-release.apk"><i class="fa-solid fa-download" style="font-size:0.7rem;"></i> Download .APK</a></li>
